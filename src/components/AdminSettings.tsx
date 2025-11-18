@@ -337,19 +337,41 @@ export default function AdminSettings({ isOpen, onClose }: AdminSettingsProps) {
     }
   };
 
+  /**
+   * ✅ FIX: "Alles zurücksetzen" erstellt EINEN Audit-Eintrag,
+   * dann löscht es ALLES (inkl. des gerade erstellten Eintrags)
+   */
   const handleResetAll = async () => {
     setDeletingAll(true);
     try {
+      // 1. AUDIT LOG EINTRAG ERSTELLEN (BEVOR alles gelöscht wird)
+      const auditResponse = await fetch(`${baseUrl}/api/admin/audit-log`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'System zurückgesetzt',
+          details: 'Alle Termine, Audit Log und Einstellungen wurden vollständig gelöscht und zurückgesetzt.',
+          performedBy: 'Admin'
+        }),
+      });
+
+      if (!auditResponse.ok) {
+        console.error('❌ Failed to create audit log entry');
+      }
+
+      // 2. TERMINE LÖSCHEN
       await fetch(`${baseUrl}/api/admin/appointments/delete-all`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
 
-      await fetch(`${baseUrl}/api/admin/audit-log/delete-all`, {
+      // 3. AUDIT LOG LÖSCHEN (mit ?silent=true - KEIN neuer Eintrag!)
+      await fetch(`${baseUrl}/api/admin/audit-log/delete-all?silent=true`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
 
+      // 4. EINSTELLUNGEN ZURÜCKSETZEN
       setSettings(defaultSettings);
       await fetch(`${baseUrl}/api/admin/settings`, {
         method: 'POST',

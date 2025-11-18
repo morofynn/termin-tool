@@ -217,11 +217,39 @@ export default function AdminTimetable({ isOpen, onClose, unseenCount, onUnseenC
     }
   }, [isOpen, currentEventYear]);
 
+  // ✅ FIX: Cleanup - Entferne gelöschte Termine aus seenAppointments
+  useEffect(() => {
+    if (appointments.length >= 0) { // Läuft auch wenn 0 Termine
+      const currentAppointmentIds = new Set(appointments.map(apt => apt.id));
+      const newSeenAppointments = new Map(seenAppointments);
+      let hasChanges = false;
+      
+      // Entferne alle IDs die nicht mehr in appointments vorhanden sind
+      seenAppointments.forEach((_, id) => {
+        if (!currentAppointmentIds.has(id)) {
+          newSeenAppointments.delete(id);
+          hasChanges = true;
+          console.log(`🗑️ Removed deleted appointment from seen list: ${id}`);
+        }
+      });
+      
+      // Speichere nur wenn sich etwas geändert hat
+      if (hasChanges) {
+        setSeenAppointments(newSeenAppointments);
+        saveSeenAppointments(newSeenAppointments);
+        console.log(`✅ Cleaned up ${seenAppointments.size - newSeenAppointments.size} deleted appointments from seen list`);
+      }
+    }
+  }, [appointments]); // Läuft jedes Mal wenn appointments sich ändert
+
   useEffect(() => {
     // Berechne ungesehene Termine und informiere Parent
     if (appointments.length > 0 && onUnseenCountChange) {
       const count = appointments.filter(apt => isAppointmentUnseen(apt)).length;
       onUnseenCountChange(count);
+    } else if (appointments.length === 0 && onUnseenCountChange) {
+      // ✅ FIX: Wenn keine Termine mehr, setze Count auf 0
+      onUnseenCountChange(0);
     }
   }, [appointments, seenAppointments, onUnseenCountChange]);
 

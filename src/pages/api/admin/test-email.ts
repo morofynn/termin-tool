@@ -1,12 +1,13 @@
 import type { APIRoute } from 'astro';
-import { sendCustomerNotification, sendReminderEmail } from '../../../lib/email';
+import { sendCustomerNotification, sendAdminNotification, sendReminderEmail } from '../../../lib/email';
 import { getLongLabel } from '../../../lib/event-config';
 
 const SETTINGS_KEY = 'settings';
 
 /**
  * API-Route zum Versenden von Test-E-Mails
- * Test-E-Mails werden an die Admin-E-Mail-Adresse gesendet
+ * ✅ FIX: Test-E-Mails senden BEIDE Versionen (Kunde + Admin) an Admin
+ * ✅ FIX: instant-booked sendet jetzt Admin-Mail
  */
 export const POST: APIRoute = async ({ request, locals, url }) => {
   const KV = locals?.runtime?.env?.APPOINTMENTS_KV;
@@ -42,13 +43,6 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     } catch (error) {
       console.error('Error loading settings:', error);
     }
-
-    // Dynamische Datum-Labels basierend auf Settings
-    const DAY_NAMES_FULL: Record<string, string> = {
-      friday: getLongLabel('friday', settings),
-      saturday: getLongLabel('saturday', settings),
-      sunday: getLongLabel('sunday', settings),
-    };
 
     // Base URL für Test-Links
     const baseUrl = url.origin;
@@ -94,7 +88,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
         status = 'cancelled';
         break;
       case 'reminder':
-        // Erinnerungs-E-Mail hat spezielle Funktion
+        // Erinnerungs-E-Mail hat spezielle Funktion (nur eine Version)
         try {
           const sent = await sendReminderEmail(
             { ...testData, status: 'confirmed', action: 'confirmed' },
@@ -136,43 +130,66 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
         );
     }
 
-    // Sende Test-E-Mail
+    // ✅ FIX: Sende BEIDE Versionen für Emails die sowohl an Kunde als auch Admin gehen
     const emailData = {
       ...testData,
       status,
       action,
     };
 
+    const results: string[] = [];
+    let allSuccess = true;
+
     try {
-      const sent = await sendCustomerNotification(
+      // 1. Kunden-Version an Admin senden
+      console.log(`📧 Sending customer version to admin (${adminEmail})...`);
+      const customerSent = await sendCustomerNotification(
         emailData,
         locals?.runtime?.env
       );
 
-      if (sent) {
-        return new Response(
-          JSON.stringify({
-            success: true,
-            message: `Test-E-Mail (${emailType}) wurde an ${adminEmail} gesendet`,
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        );
+      if (customerSent) {
+        results.push(`✅ Kunden-E-Mail (${emailType})`);
       } else {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            message: 'Fehler beim Versenden der Test-E-Mail',
-          }),
-          { status: 500, headers: { 'Content-Type': 'application/json' } }
-        );
+        results.push(`❌ Kunden-E-Mail (${emailType}) fehlgeschlagen`);
+        allSuccess = false;
       }
+
+      // 2. Admin-Version an Admin senden (für requested, instant-booked, confirmed, cancelled, rejected)
+      if (['requested', 'instant-booked', 'confirmed', 'cancelled', 'rejected'].includes(action)) {
+        console.log(`📧 Sending admin version to admin (${adminEmail})...`);
+        const adminSent = await sendAdminNotification(
+          emailData,
+          adminEmail,
+          locals?.runtime?.env
+        );
+
+        if (adminSent) {
+          results.push(`✅ Admin-E-Mail (${emailType})`);
+        } else {
+          results.push(`❌ Admin-E-Mail (${emailType}) fehlgeschlagen`);
+          allSuccess = false;
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: allSuccess,
+          message: allSuccess 
+            ? `Beide Test-E-Mails (${emailType}) wurden an ${adminEmail} gesendet:\n${results.join('\n')}`
+            : `Fehler beim Versenden einiger Test-E-Mails:\n${results.join('\n')}`,
+          results,
+        }),
+        { status: allSuccess ? 200 : 500, headers: { 'Content-Type': 'application/json' } }
+      );
     } catch (error) {
-      console.error('Error sending test email:', error);
+      console.error('Error sending test emails:', error);
       return new Response(
         JSON.stringify({
           success: false,
-          message: 'Fehler beim Versenden der Test-E-Mail',
+          message: 'Fehler beim Versenden der Test-E-Mails',
           error: error instanceof Error ? error.message : 'Unknown error',
+          results,
         }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );

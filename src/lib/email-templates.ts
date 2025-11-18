@@ -6,6 +6,7 @@
  * - ICS Calendar Dateien
  * - XSS-geschützt
  * - Responsive HTML Design
+ * - Unterscheidung zwischen instant-booked und confirmed
  */
 
 import ical, { ICalCalendar } from 'ical-generator';
@@ -588,12 +589,12 @@ export function generateCustomerReminderEmail(
 
 /**
  * ADMIN: Benachrichtigung über Terminaktionen
- * ✅ FIX: ICS-Anhang für Sofortbuchungen/Bestätigungen hinzugefügt
+ * ✅ FIX: Unterscheidung zwischen instant-booked und confirmed
  */
 export function generateAdminNotificationEmail(
   appointment: AppointmentData,
   settings: EmailSettings,
-  action: 'requested' | 'confirmed' | 'cancelled' | 'rejected'
+  action: 'requested' | 'confirmed' | 'instant-booked' | 'cancelled' | 'rejected'
 ): string {
   const primaryColor = settings.primaryColor || '#2d62ff';
   
@@ -609,9 +610,14 @@ export function generateAdminNotificationEmail(
       statusBadge = { text: 'Ausstehend', color: '#ca8a04', bg: '#fef3c7' };
       actionRequired = true;
       break;
+    case 'instant-booked':
+      headerTitle = '✅ Termin automatisch bestätigt';
+      headerSubtitle = 'Ein Termin wurde automatisch bestätigt';
+      statusBadge = { text: 'Auto-Bestätigt', color: '#16a34a', bg: '#dcfce7' };
+      break;
     case 'confirmed':
       headerTitle = '✅ Termin bestätigt';
-      headerSubtitle = 'Ein Termin wurde automatisch bestätigt';
+      headerSubtitle = 'Ein Termin wurde bestätigt';
       statusBadge = { text: 'Bestätigt', color: '#16a34a', bg: '#dcfce7' };
       break;
     case 'cancelled':

@@ -2,9 +2,12 @@ import type { APIRoute } from 'astro';
 
 /**
  * POST: Löscht alle Audit Log Einträge
- * Erstellt danach einen neuen Eintrag über die Löschaktion
+ * 
+ * Query-Parameter:
+ * - silent=true: Löscht OHNE neuen Audit-Eintrag zu erstellen (für "Alles zurücksetzen")
+ * - silent=false (default): Erstellt nach Löschen einen Audit-Eintrag
  */
-export const POST: APIRoute = async ({ locals }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   console.log('🗑️ POST /api/admin/audit-log/delete-all - Clearing all audit logs');
   
   try {
@@ -23,6 +26,11 @@ export const POST: APIRoute = async ({ locals }) => {
         }
       );
     }
+
+    // Prüfe ob "silent" Mode aktiv ist (für "Alles zurücksetzen")
+    const url = new URL(request.url);
+    const silent = url.searchParams.get('silent') === 'true';
+    console.log(`🔇 Silent mode: ${silent}`);
 
     // Hole alle Audit Log IDs
     const auditListData = await KV.get('audit:list');
@@ -61,26 +69,31 @@ export const POST: APIRoute = async ({ locals }) => {
     await KV.delete('audit:list');
     console.log(`✅ Deleted ${deletedCount} audit log entries`);
 
-    // Erstelle einen Audit Log Eintrag über das Löschen
-    // (Dies ist der einzige Eintrag der übrig bleibt)
-    const auditId = `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const entry = {
-      id: auditId,
-      timestamp: new Date().toISOString(),
-      action: 'Audit Log gelöscht',
-      details: `Alle Audit Log Einträge (${deletedCount} Stück) wurden vom Admin gelöscht.`,
-      userEmail: 'Admin',
-    };
+    // NUR wenn nicht im Silent Mode: Erstelle einen neuen Audit-Eintrag
+    if (!silent) {
+      const auditId = `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const entry = {
+        id: auditId,
+        timestamp: new Date().toISOString(),
+        action: 'Audit Log gelöscht',
+        details: `Alle Audit Log Einträge (${deletedCount} Stück) wurden vom Admin gelöscht.`,
+        userEmail: 'Admin',
+      };
 
-    // Speichere den Audit Log Eintrag
-    await KV.put(`audit:${auditId}`, JSON.stringify(entry), { 
-      expirationTtl: 60 * 60 * 24 * 90 // 90 Tage
-    });
+      // Speichere den Audit Log Eintrag
+      await KV.put(`audit:${auditId}`, JSON.stringify(entry), { 
+        expirationTtl: 60 * 60 * 24 * 90 // 90 Tage
+      });
 
-    // Erstelle neue Liste mit nur diesem Eintrag
-    await KV.put('audit:list', JSON.stringify([auditId]), { 
-      expirationTtl: 60 * 60 * 24 * 90 // 90 Tage
-    });
+      // Erstelle neue Liste mit nur diesem Eintrag
+      await KV.put('audit:list', JSON.stringify([auditId]), { 
+        expirationTtl: 60 * 60 * 24 * 90 // 90 Tage
+      });
+      
+      console.log('📝 Created new audit log entry for deletion');
+    } else {
+      console.log('🔇 Silent mode - no audit log entry created');
+    }
 
     return new Response(
       JSON.stringify({ 

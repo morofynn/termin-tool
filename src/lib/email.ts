@@ -7,6 +7,9 @@
  * Fixed: "Invalid Date" Problem - ISO-Datum statt formatierter String
  * Fixed: Termindauer aus Settings verwenden
  * Fixed: Admin-Email Link führt zum Admin-Panel (dynamisch aus ADMIN_SECRET_PATH)
+ * Fixed: Admin-Email Formatierung & Subject für Auto-Confirm
+ * Fixed: Test-Emails senden BEIDE Versionen (Kunde + Admin) an Admin
+ * Fixed: Sofortbuchung sendet Admin-Mail mit richtiger Action (instant-booked)
  */
 
 import { 
@@ -413,7 +416,10 @@ export async function sendCustomerNotification(
 
 /**
  * Sends admin notification
- * ✅ FIX: Admin-Email Link verwendet dynamischen ADMIN_SECRET_PATH
+ * ✅ FIX: Admin-Email Link führt zum Admin-Panel (nicht zu Terminseite)
+ * ✅ FIX: Auto-Confirm Emails haben jetzt ICS-Anhang
+ * ✅ FIX: Subject & Header korrekt formatiert
+ * ✅ FIX: Sofortbuchung (instant-booked) wird akzeptiert und als separater Template generiert
  */
 export async function sendAdminNotification(
   data: {
@@ -424,8 +430,8 @@ export async function sendAdminNotification(
     company?: string;
     phone: string;
     message?: string;
-    appointmentUrl: string;
-    action: 'requested' | 'confirmed' | 'cancelled' | 'rejected';
+    appointmentUrl: string; // Dies ist die Termin-Detailseite (/termin/xxx)
+    action: 'requested' | 'instant-booked' | 'confirmed' | 'cancelled' | 'rejected';
     status: 'pending' | 'confirmed' | 'cancelled';
   },
   adminEmail: string,
@@ -445,22 +451,36 @@ export async function sendAdminNotification(
     console.error('Error loading duration settings:', error);
   }
   
-  // ✅ FIX: Admin-Panel Path dynamisch aus Umgebungsvariable laden
+  // ✅ FIX: Admin-Panel URL korrekt aufbauen
+  // URL-Aufbau: https://{site}.webflow.io/{baseUrl}/{adminSecretPath}
   const adminSecretPath = env?.ADMIN_SECRET_PATH || import.meta.env.ADMIN_SECRET_PATH || 'secure-admin-panel-xyz789';
-  const baseUrl = data.appointmentUrl.split('/termin/')[0];
+  const baseUrl = data.appointmentUrl.split('/termin/')[0]; // z.B. "https://moro-termin-tool.webflow.io/appointment-scheduler"
   const adminPanelUrl = `${baseUrl}/${adminSecretPath}`;
+  
+  console.log(`🔍 Admin URL Konstruktion:`);
+  console.log(`  - appointmentUrl: ${data.appointmentUrl}`);
+  console.log(`  - baseUrl: ${baseUrl}`);
+  console.log(`  - adminSecretPath: ${adminSecretPath}`);
+  console.log(`  - adminPanelUrl: ${adminPanelUrl}`);
   
   const appointment = convertToAppointmentData({
     ...data,
-    appointmentUrl: adminPanelUrl, // ✅ Dynamischer Admin-Panel URL
+    appointmentUrl: adminPanelUrl, // ✅ Admin-Panel URL statt Termin-URL
   }, durationMinutes);
   
-  const html = generateAdminNotificationEmail(appointment, settings, data.action);
+  // ✅ Map instant-booked to email template action
+  const templateAction = data.action === 'instant-booked' ? 'instant-booked' : data.action;
   
+  const html = generateAdminNotificationEmail(appointment, settings, templateAction);
+  
+  // ✅ FIX: Korrekte Subject Lines mit formatiertem Datum
   let subject = '';
   switch (data.action) {
     case 'requested':
       subject = `⏳ Neue Terminanfrage: ${data.name} am ${formatDate(data.day)} um ${data.time}`;
+      break;
+    case 'instant-booked':
+      subject = `✅ Termin automatisch bestätigt: ${data.name} am ${formatDate(data.day)} um ${data.time}`;
       break;
     case 'confirmed':
       subject = `✅ Termin bestätigt: ${data.name} am ${formatDate(data.day)} um ${data.time}`;
@@ -473,16 +493,26 @@ export async function sendAdminNotification(
       break;
   }
   
+  // ✅ FIX: ICS-Anhang für Auto-Confirm & bestätigte Termine (action = 'confirmed' oder 'instant-booked')
+  let icsAttachment: string | undefined = undefined;
+  if (data.action === 'confirmed' || data.action === 'instant-booked') {
+    // Verwende die Original-Termin-URL (nicht Admin-Panel) für ICS
+    const icsAppointment = convertToAppointmentData(data, durationMinutes);
+    icsAttachment = generateICS(icsAppointment, settings);
+  }
+  
   const result = await sendEmail({
     to: adminEmail,
     subject,
     html,
+    icsAttachment, // ✅ ICS-Anhang bei confirmed und instant-booked
     from: `${settings.companyName} - Terminbuchung <${settings.companyEmail}>`,
   }, env);
 
   // Audit Log für Admin-E-Mail
   if (env?.APPOINTMENTS_KV) {
     const actionLabel = data.action === 'requested' ? 'Neue Anfrage' : 
+                       data.action === 'instant-booked' ? 'Sofortbestätigung' :
                        data.action === 'confirmed' ? 'Bestätigung' :
                        data.action === 'cancelled' ? 'Stornierung' : 'Ablehnung';
     
