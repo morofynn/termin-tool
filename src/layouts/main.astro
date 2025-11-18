@@ -4,7 +4,6 @@ import '../site-components/global.css';
 import '../styles/global.css';
 import '../styles/component-fixes.css';
 import '../styles/mobile-responsive.css';
-import { baseUrl } from '../lib/base-url';
 
 const { pageClass = '', lightMode = false } = Astro.props;
 ---
@@ -12,18 +11,6 @@ const { pageClass = '', lightMode = false } = Astro.props;
 <html lang="de" class={pageClass}>
 <head>
 <meta charset="utf-8" />
-
-<!-- Favicon - Alle Formate für beste Kompatibilität -->
-<link rel="icon" type="image/x-icon" href={`${baseUrl}/favicon.ico`} />
-<link rel="icon" type="image/png" sizes="32x32" href={`${baseUrl}/favicon-32x32.png`} />
-<link rel="icon" type="image/png" sizes="16x16" href={`${baseUrl}/favicon-16x16.png`} />
-<link rel="apple-touch-icon" sizes="180x180" href={`${baseUrl}/apple-touch-icon.png`} />
-<link rel="manifest" href={`${baseUrl}/site.webmanifest`} />
-
-<!-- Theme Color für Mobile Browser -->
-<meta name="theme-color" content="#2d62ff" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
 <meta name="generator" content={Astro.generator} />
 <title>Terminbuchung</title>
