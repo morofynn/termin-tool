@@ -99,6 +99,7 @@ export function validateDay(day: string): boolean {
  * Validiert Time Format (HH:MM)
  */
 export function validateTime(time: string): boolean {
+  if (!time) return true; // Optional für Form-Validierung
   const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
   return timeRegex.test(time);
 }
@@ -116,6 +117,14 @@ export function validateStatus(status: string): boolean {
 export interface AppointmentValidationResult {
   valid: boolean;
   errors: Record<string, string>;
+  sanitized?: {
+    name: string;
+    company?: string;
+    phone: string;
+    email: string;
+    message?: string;
+    time?: string;
+  };
 }
 
 export function validateAppointmentBooking(data: {
@@ -170,9 +179,21 @@ export function validateAppointmentBooking(data: {
     errors.date = 'Ungültiges Datum';
   }
   
+  const valid = Object.keys(errors).length === 0;
+  
   return {
-    valid: Object.keys(errors).length === 0,
+    valid,
     errors,
+    ...(valid && {
+      sanitized: {
+        name: sanitizeInput(data.name),
+        company: data.company ? sanitizeInput(data.company) : undefined,
+        phone: sanitizeInput(data.phone),
+        email: sanitizeInput(data.email),
+        message: data.message ? sanitizeInput(data.message) : undefined,
+        time: data.time,
+      }
+    })
   };
 }
 
@@ -195,6 +216,9 @@ export function sanitizeAppointmentData<T extends Record<string, any>>(data: T):
 /**
  * Vereinfachte Validierung für Form Data
  * (für Backwards Compatibility mit existierendem Code)
+ * 
+ * WICHTIG: Diese Funktion wird im Frontend verwendet OHNE time,
+ * weil time separat verwaltet wird (selectedTime State)
  */
 export function validateFormData(data: {
   name: string;
@@ -202,22 +226,22 @@ export function validateFormData(data: {
   phone: string;
   email: string;
   message?: string;
-  time: string;
+  time?: string;
 }): AppointmentValidationResult {
   const errors: Record<string, string> = {};
   
   // Name
-  if (!validateName(data.name)) {
+  if (!data.name || !validateName(data.name)) {
     errors.name = 'Ungültiger Name (min. 2 Zeichen, nur Buchstaben)';
   }
   
   // Email
-  if (!validateEmail(data.email)) {
+  if (!data.email || !validateEmail(data.email)) {
     errors.email = 'Ungültige E-Mail Adresse';
   }
   
   // Phone
-  if (!validatePhone(data.phone)) {
+  if (!data.phone || !validatePhone(data.phone)) {
     errors.phone = 'Ungültige Telefonnummer';
   }
   
@@ -231,13 +255,25 @@ export function validateFormData(data: {
     errors.message = 'Nachricht enthält ungültige Zeichen oder ist zu lang';
   }
   
-  // Time
-  if (!validateTime(data.time)) {
+  // Time (optional - nur wenn mitgegeben)
+  if (data.time && !validateTime(data.time)) {
     errors.time = 'Ungültige Uhrzeit';
   }
   
+  const valid = Object.keys(errors).length === 0;
+  
   return {
-    valid: Object.keys(errors).length === 0,
+    valid,
     errors,
+    ...(valid && {
+      sanitized: {
+        name: sanitizeInput(data.name),
+        company: data.company ? sanitizeInput(data.company) : undefined,
+        phone: sanitizeInput(data.phone),
+        email: sanitizeInput(data.email),
+        message: data.message ? sanitizeInput(data.message) : undefined,
+        time: data.time,
+      }
+    })
   };
 }

@@ -1185,7 +1185,7 @@ export default function AdminSettings({ isOpen, onClose }: AdminSettingsProps) {
                       <XOctagon className="w-4 h-4 text-red-800 flex-shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0 space-y-3">
                         <div>
-                          <h4 className="text-sm font-bold text-red-900 mb-2">⚠️ ALLES ZURÜCKSETZEN</h4>
+                          <h4 className="text-sm font-bold text-red-900 mb-2">ALLES ZURÜCKSETZEN</h4>
                           <p className="text-xs text-red-800 mb-2">
                             <strong>WARNUNG:</strong> Diese Aktion löscht:
                           </p>
@@ -1424,7 +1424,7 @@ export default function AdminSettings({ isOpen, onClose }: AdminSettingsProps) {
               <div className="p-2 bg-red-200 rounded-lg">
                 <XOctagon className="h-5 w-5 text-red-800" />
               </div>
-              ⚠️ ALLES ZURÜCKSETZEN?
+              ALLES ZURÜCKSETZEN?
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-3 pt-2">
               <div className="bg-red-100 border-2 border-red-400 rounded-xl p-3">

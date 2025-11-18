@@ -40,7 +40,7 @@ export interface AppointmentData {
 
 /**
  * Generiert ICS Calendar Datei für Appointment
- * ✅ FIX: Firmendaten prominenter für Kunden-ICS
+ * ✅ FIX: Nur noch EIN Link zur Terminseite (in der Description)
  */
 export function generateICS(appointment: AppointmentData, settings: EmailSettings): string {
   const calendar = ical({ name: `Termin ${settings.companyName}` });
@@ -67,7 +67,7 @@ export function generateICS(appointment: AppointmentData, settings: EmailSetting
     `E-Mail: ${settings.companyEmail}`,
     settings.companyWebsite ? `Website: ${settings.companyWebsite}` : '',
     appointment.message ? `\n\nIhre Nachricht:\n${appointment.message}` : '',
-    `\n\nTermin-Details: ${appointment.appointmentUrl}`,
+    `\n\nTermin verwalten: ${appointment.appointmentUrl}`,
   ].filter(Boolean).join('');
   
   // Create Event
@@ -81,7 +81,7 @@ export function generateICS(appointment: AppointmentData, settings: EmailSetting
     location: settings.standInfo 
       ? `${settings.standInfo}${settings.eventName ? ` (${settings.eventName})` : ''}`
       : settings.companyAddress,
-    url: appointment.appointmentUrl,
+    // url: Nicht mehr verwendet - war doppelt
     organizer: {
       name: settings.companyName,
       email: settings.companyEmail,
