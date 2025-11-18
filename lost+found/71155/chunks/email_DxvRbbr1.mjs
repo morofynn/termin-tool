@@ -1,0 +1,958 @@
+globalThis.process ??= {}; globalThis.process.env ??= {};
+var b=(u=>(u.DAILY="DAILY",u.HOURLY="HOURLY",u.MINUTELY="MINUTELY",u.MONTHLY="MONTHLY",u.SECONDLY="SECONDLY",u.WEEKLY="WEEKLY",u.YEARLY="YEARLY",u))(b||{}),A=(u=>(u.FR="FR",u.MO="MO",u.SA="SA",u.SU="SU",u.TH="TH",u.TU="TU",u.WE="WE",u))(A||{});function l(a,t,e){if(Array.isArray(t))a.x=t.map(n=>{if(Array.isArray(n))return n;if(typeof n.key!="string"||typeof n.value!="string")throw new Error("Either key or value is not a string!");if(n.key.substr(0,2)!=="X-")throw new Error("Key has to start with `X-`!");return [n.key,n.value]});else if(typeof t=="object")a.x=Object.entries(t).map(([n,i])=>{if(typeof n!="string"||typeof i!="string")throw new Error("Either key or value is not a string!");if(n.substr(0,2)!=="X-")throw new Error("Key has to start with `X-`!");return [n,i]});else if(typeof t=="string"&&typeof e=="string"){if(t.substr(0,2)!=="X-")throw new Error("Key has to start with `X-`!");a.x.push([t,e]);}else return a.x.map(n=>({key:n[0],value:n[1]}))}function h(a,t){if(a instanceof Date&&isNaN(a.getTime())||typeof a=="string"&&isNaN(new Date(a).getTime()))throw new Error(`\`${t}\` has to be a valid date!`);if(a instanceof Date||typeof a=="string"||S(a)&&a.isValid===true||(R(a)||G(a))&&a.isValid())return a;throw new Error(`\`${t}\` has to be a valid date!`)}function o(a,t){let e=Object.values(a),n=String(t).toUpperCase();if(!n||!e.includes(n))throw new Error(`Input must be one of the following: ${e.join(", ")}`);return n}function p(a,t){let e=null;if(typeof t=="string"){let n=t.match(/^(.+) ?<([^>]+)>$/);n?e={email:n[2].trim(),name:n[1].trim()}:t.includes("@")&&(e={email:t.trim(),name:t.trim()});}else typeof t=="object"&&(e={email:t.email,mailto:t.mailto,name:t.name,sentBy:t.sentBy});if(!e&&typeof t=="string")throw new Error("`"+a+"` isn't formated correctly. See https://sebbo2002.github.io/ical-generator/develop/reference/interfaces/ICalOrganizer.html");if(!e)throw new Error("`"+a+"` needs to be a valid formed string or an object. See https://sebbo2002.github.io/ical-generator/develop/reference/interfaces/ICalOrganizer.html");if(!e.name)throw new Error("`"+a+".name` is empty!");if(!e.email)throw new Error("`"+a+".email` is empty!");return e}function r(a,t){return String(a).replace(t?/[\\"]/g:/[\\;,]/g,function(e){return "\\"+e}).replace(/(?:\r\n|\r|\n)/g,"\\n")}function N(a){return a.split(`\r
+`).map(function(t){let e="",n=0;for(let i=0;i<t.length;i++){let s=t.charAt(i);s>="\uD800"&&s<="\uDBFF"&&(s+=t.charAt(++i));let F=new TextEncoder().encode(s).length;n+=F,n>74&&(e+=`\r
+ `,n=F),e+=s;}return e}).join(`\r
+`)}function d(a,t,e,n){if(a?.startsWith("/")&&(a=a.substr(1)),typeof t=="string"||t instanceof Date){let i=H(t)?t.withTimeZone(a):new Date(t),s=i.getUTCFullYear()+String(i.getUTCMonth()+1).padStart(2,"0")+i.getUTCDate().toString().padStart(2,"0");return a&&(s=i.getFullYear()+String(i.getMonth()+1).padStart(2,"0")+i.getDate().toString().padStart(2,"0")),e?s:a?(s+="T"+i.getHours().toString().padStart(2,"0")+i.getMinutes().toString().padStart(2,"0")+i.getSeconds().toString().padStart(2,"0"),s):(s+="T"+i.getUTCHours().toString().padStart(2,"0")+i.getUTCMinutes().toString().padStart(2,"0")+i.getUTCSeconds().toString().padStart(2,"0")+(n?"":"Z"),s)}else if(R(t)){let i=a?k(t)&&!t.tz()?t.clone().tz(a):t:n||e&&k(t)&&t.tz()?t:t.utc();return i.format("YYYYMMDD")+(e?"":"T"+i.format("HHmmss")+(n||a?"":"Z"))}else if(S(t)){let i=a?t.setZone(a):n||e&&t.zone.type!=="system"?t:t.setZone("utc");return i.toFormat("yyyyLLdd")+(e?"":"T"+i.toFormat("HHmmss")+(n||a?"":"Z"))}else {let i=t;if(a)i=typeof t.tz=="function"?t.tz(a):t;else if(!n)if(typeof t.utc=="function")i=t.utc();else throw new Error("Unable to convert dayjs object to UTC value: UTC plugin is not available!");return i.format("YYYYMMDD")+(e?"":"T"+i.format("HHmmss")+(n||a?"":"Z"))}}function E(a,t,e,n){let i="",s=n?.floating||false;return n?.timezone&&(i=";TZID="+n.timezone,s=true),t+i+":"+d(a,e,false,s)}function D(a){let t=a.x.map(([e,n])=>e.toUpperCase()+":"+r(n,false)).join(`\r
+`);return t.length?t+`\r
+`:""}function G(a){return typeof a=="object"&&a!==null&&!(a instanceof Date)&&!R(a)&&!S(a)}function S(a){return typeof a=="object"&&a!==null&&"toJSDate"in a&&typeof a.toJSDate=="function"}function R(a){return a!=null&&a._isAMomentObject!=null}function J(a){return a!==null&&typeof a=="object"&&"asSeconds"in a&&typeof a.asSeconds=="function"}function k(a){return R(a)&&"tz"in a&&typeof a.tz=="function"}function x(a){return a!==null&&typeof a=="object"&&"between"in a&&typeof a.between=="function"&&typeof a.toString=="function"}function H(a){return a instanceof Date&&"internal"in a&&a.internal instanceof Date&&"withTimeZone"in a&&typeof a.withTimeZone=="function"&&"tzComponents"in a&&typeof a.tzComponents=="function"}function v(a){return typeof a=="string"||a instanceof Date?new Date(a):S(a)?a.toJSDate():a.toDate()}function C(a){let t="";return a<0&&(t="-",a*=-1),t+="P",a>=86400&&(t+=Math.floor(a/86400)+"D",a%=86400),!a&&t.length>1||(t+="T",a>=3600&&(t+=Math.floor(a/3600)+"H",a%=3600),a>=60&&(t+=Math.floor(a/60)+"M",a%=60),a>0?t+=a+"S":t.length<=2&&(t+="0S")),t}function g(a){return a?typeof a=="string"?a:a.toJSON():null}var O=(i=>(i.CHAIR="CHAIR",i.NON="NON-PARTICIPANT",i.OPT="OPT-PARTICIPANT",i.REQ="REQ-PARTICIPANT",i))(O||{}),Y=(n=>(n.CLIENT="CLIENT",n.NONE="NONE",n.SERVER="SERVER",n))(Y||{}),w=(s=>(s.ACCEPTED="ACCEPTED",s.DECLINED="DECLINED",s.DELEGATED="DELEGATED",s.NEEDSACTION="NEEDS-ACTION",s.TENTATIVE="TENTATIVE",s))(w||{}),M=(s=>(s.GROUP="GROUP",s.INDIVIDUAL="INDIVIDUAL",s.RESOURCE="RESOURCE",s.ROOM="ROOM",s.UNKNOWN="UNKNOWN",s))(M||{}),f=class a{data;parent;constructor(t,e){if(this.data={delegatedFrom:null,delegatedTo:null,email:"",mailto:null,name:null,role:"REQ-PARTICIPANT",rsvp:null,scheduleAgent:null,sentBy:null,status:null,type:null,x:[]},this.parent=e,!this.parent)throw new Error("`event` option required!");if(!t.email)throw new Error("No value for `email` in ICalAttendee given!");t.name!==void 0&&this.name(t.name),t.email!==void 0&&this.email(t.email),t.mailto!==void 0&&this.mailto(t.mailto),t.sentBy!==void 0&&this.sentBy(t.sentBy),t.status!==void 0&&this.status(t.status),t.role!==void 0&&this.role(t.role),t.rsvp!==void 0&&this.rsvp(t.rsvp),t.type!==void 0&&this.type(t.type),t.delegatedTo!==void 0&&this.delegatedTo(t.delegatedTo),t.delegatedFrom!==void 0&&this.delegatedFrom(t.delegatedFrom),t.delegatesTo&&this.delegatesTo(t.delegatesTo),t.delegatesFrom&&this.delegatesFrom(t.delegatesFrom),t.scheduleAgent!==void 0&&this.scheduleAgent(t.scheduleAgent),t.x!==void 0&&this.x(t.x);}delegatedFrom(t){return t===void 0?this.data.delegatedFrom:(t?typeof t=="string"?this.data.delegatedFrom=new a(p("delegatedFrom",t),this.parent):t instanceof a?this.data.delegatedFrom=t:this.data.delegatedFrom=new a(t,this.parent):this.data.delegatedFrom=null,this)}delegatedTo(t){return t===void 0?this.data.delegatedTo:t?(typeof t=="string"?this.data.delegatedTo=new a(p("delegatedTo",t),this.parent):t instanceof a?this.data.delegatedTo=t:this.data.delegatedTo=new a(t,this.parent),this.data.status="DELEGATED",this):(this.data.delegatedTo=null,this.data.status==="DELEGATED"&&(this.data.status=null),this)}delegatesFrom(t){let e=t instanceof a?t:this.parent.createAttendee(t);return this.delegatedFrom(e),e.delegatedTo(this),e}delegatesTo(t){let e=t instanceof a?t:this.parent.createAttendee(t);return this.delegatedTo(e),e.delegatedFrom(this),e}email(t){return t?(this.data.email=t,this):this.data.email}mailto(t){return t===void 0?this.data.mailto:(this.data.mailto=t||null,this)}name(t){return t===void 0?this.data.name:(this.data.name=t||null,this)}role(t){return t===void 0?this.data.role:(this.data.role=o(O,t),this)}rsvp(t){return t===void 0?this.data.rsvp:t===null?(this.data.rsvp=null,this):(this.data.rsvp=!!t,this)}scheduleAgent(t){return t===void 0?this.data.scheduleAgent:t?typeof t=="string"&&t.toUpperCase().startsWith("X-")?(this.data.scheduleAgent=t,this):(this.data.scheduleAgent=o(Y,t),this):(this.data.scheduleAgent=null,this)}sentBy(t){return t?(this.data.sentBy=t,this):this.data.sentBy}status(t){return t===void 0?this.data.status:t?(this.data.status=o(w,t),this):(this.data.status=null,this)}toJSON(){return Object.assign({},this.data,{delegatedFrom:this.data.delegatedFrom?.email()||null,delegatedTo:this.data.delegatedTo?.email()||null,x:this.x()})}toString(){let t="ATTENDEE";if(!this.data.email)throw new Error("No value for `email` in ICalAttendee given!");return t+=";ROLE="+this.data.role,this.data.type&&(t+=";CUTYPE="+this.data.type),this.data.status&&(t+=";PARTSTAT="+this.data.status),this.data.rsvp!==null&&(t+=";RSVP="+this.data.rsvp.toString().toUpperCase()),this.data.sentBy!==null&&(t+=';SENT-BY="mailto:'+this.data.sentBy+'"'),this.data.delegatedTo&&(t+=';DELEGATED-TO="'+this.data.delegatedTo.email()+'"'),this.data.delegatedFrom&&(t+=';DELEGATED-FROM="'+this.data.delegatedFrom.email()+'"'),this.data.name&&(t+=';CN="'+r(this.data.name,true)+'"'),this.data.email&&this.data.mailto&&(t+=";EMAIL="+r(this.data.email,false)),this.data.scheduleAgent&&(t+=";SCHEDULE-AGENT="+this.data.scheduleAgent),this.data.x.length&&(t+=";"+this.data.x.map(([e,n])=>e.toUpperCase()+"="+r(n,false)).join(";")),t+=":MAILTO:"+r(this.data.mailto||this.data.email,false)+`\r
+`,t}type(t){return t===void 0?this.data.type:t?(this.data.type=o(M,t),this):(this.data.type=null,this)}x(t,e){if(t===void 0)return l(this.data);if(typeof t=="string"&&typeof e=="string")l(this.data,t,e);else if(typeof t=="object")l(this.data,t);else throw new Error("Either key or value is not a string!");return this}};var V=(n=>(n.audio="audio",n.display="display",n.email="email",n))(V||{}),j={end:"END",start:"START"},I=class{data;event;constructor(t,e){if(this.data={attach:null,attendees:[],description:null,interval:null,relatesTo:null,repeat:null,summary:null,trigger:-600,type:"display",x:[]},this.event=e,!e)throw new Error("`event` option required!");t.type!==void 0&&this.type(t.type),"trigger"in t&&t.trigger!==void 0&&this.trigger(t.trigger),"triggerBefore"in t&&t.triggerBefore!==void 0&&this.triggerBefore(t.triggerBefore),"triggerAfter"in t&&t.triggerAfter!==void 0&&this.triggerAfter(t.triggerAfter),t.repeat&&this.repeat(t.repeat),t.attach!==void 0&&this.attach(t.attach),t.description!==void 0&&this.description(t.description),t.summary!==void 0&&this.summary(t.summary),t.attendees!==void 0&&this.attendees(t.attendees),t.x!==void 0&&this.x(t.x);}attach(t){if(t===void 0)return this.data.attach;if(!t)return this.data.attach=null,this;let e=null;if(typeof t=="string")e={mime:null,uri:t};else if(typeof t=="object")e={mime:t.mime||null,uri:t.uri};else throw new Error("`attachment` needs to be a valid formed string or an object. See https://sebbo2002.github.io/ical-generator/develop/reference/classes/ICalAlarm.html#attach");if(!e.uri)throw new Error("`attach.uri` is empty!");return this.data.attach={mime:e.mime,uri:e.uri},this}attendees(t){return t?(t.forEach(e=>this.createAttendee(e)),this):this.data.attendees}createAttendee(t){if(t instanceof f)return this.data.attendees.push(t),t;typeof t=="string"&&(t=p("data",t));let e=new f(t,this);return this.data.attendees.push(e),e}description(t){return t===void 0?this.data.description:t?(this.data.description=t,this):(this.data.description=null,this)}relatesTo(t){if(t===void 0)return this.data.relatesTo;if(!t)return this.data.relatesTo=null,this;if(!Object.values(j).includes(t))throw new Error("`relatesTo` is not correct, must be either `START` or `END`!");return this.data.relatesTo=t,this}repeat(t){if(t===void 0)return this.data.repeat;if(!t)return this.data.repeat=null,this;if(typeof t!="object")throw new Error("`repeat` is not correct, must be an object!");if(typeof t.times!="number"||!isFinite(t.times))throw new Error("`repeat.times` is not correct, must be numeric!");if(typeof t.interval!="number"||!isFinite(t.interval))throw new Error("`repeat.interval` is not correct, must be numeric!");return this.data.repeat=t,this}summary(t){return t===void 0?this.data.summary:t?(this.data.summary=t,this):(this.data.summary=null,this)}toJSON(){let t=this.trigger();return Object.assign({},this.data,{trigger:typeof t=="number"?t:g(t),x:this.x()})}toString(){let t=`BEGIN:VALARM\r
+`;if(t+="ACTION:"+this.data.type.toUpperCase()+`\r
+`,typeof this.data.trigger=="number"&&this.data.relatesTo===null?this.data.trigger>0?t+="TRIGGER;RELATED=END:"+C(this.data.trigger)+`\r
+`:t+="TRIGGER:"+C(this.data.trigger)+`\r
+`:typeof this.data.trigger=="number"?t+="TRIGGER;RELATED="+this.data.relatesTo?.toUpperCase()+":"+C(this.data.trigger)+`\r
+`:t+="TRIGGER;VALUE=DATE-TIME:"+d(this.event.timezone(),this.data.trigger)+`\r
+`,this.data.repeat){if(!this.data.repeat.times)throw new Error("No value for `repeat.times` in ICalAlarm given, but required for `interval`!");if(!this.data.repeat.interval)throw new Error("No value for `repeat.interval` in ICalAlarm given, but required for `repeat`!");t+="REPEAT:"+this.data.repeat.times+`\r
+`,t+="DURATION:"+C(this.data.repeat.interval)+`\r
+`;}return this.data.type==="audio"&&this.data.attach&&this.data.attach.mime?t+="ATTACH;FMTTYPE="+r(this.data.attach.mime,false)+":"+r(this.data.attach.uri,false)+`\r
+`:this.data.type==="audio"&&this.data.attach?t+="ATTACH;VALUE=URI:"+r(this.data.attach.uri,false)+`\r
+`:this.data.type==="audio"&&(t+=`ATTACH;VALUE=URI:Basso\r
+`),this.data.type!=="audio"&&this.data.description?t+="DESCRIPTION:"+r(this.data.description,false)+`\r
+`:this.data.type!=="audio"&&(t+="DESCRIPTION:"+r(this.event.summary(),false)+`\r
+`),this.data.type==="email"&&this.data.summary?t+="SUMMARY:"+r(this.data.summary,false)+`\r
+`:this.data.type==="email"&&(t+="SUMMARY:"+r(this.event.summary(),false)+`\r
+`),this.data.type==="email"&&this.data.attendees.forEach(e=>{t+=e.toString();}),t+=D(this.data),t+=`END:VALARM\r
+`,t}trigger(t){if(t===void 0&&typeof this.data.trigger=="number")return  -1*this.data.trigger;if(t===void 0)return this.data.trigger;if(typeof t=="number"&&isFinite(t))this.data.trigger=-1*t;else {if(!t||typeof t=="number")throw new Error("`trigger` is not correct, must be a finite number or a supported date!");this.data.trigger=h(t,"trigger");}return this}triggerAfter(t){return t===void 0?this.data.trigger:this.trigger(typeof t=="number"?-1*t:t)}triggerBefore(t){return t===void 0?this.trigger():this.trigger(t)}type(t){if(t===void 0)return this.data.type;if(!t||!Object.keys(V).includes(t))throw new Error("`type` is not correct, must be either `display` or `audio`!");return this.data.type=t,this}x(t,e){if(t===void 0)return l(this.data);if(typeof t=="string"&&typeof e=="string")l(this.data,t,e);else if(typeof t=="object")l(this.data,t);else throw new Error("Either key or value is not a string!");return this}};var c=class{data;constructor(t){if(this.data={name:""},!t.name)throw new Error("No value for `name` in ICalCategory given!");this.name(t.name);}name(t){return t===void 0?this.data.name:(this.data.name=t,this)}toJSON(){return Object.assign({},this.data)}toString(){return r(this.data.name,false)}};var L=(i=>(i.BUSY="BUSY",i.FREE="FREE",i.OOF="OOF",i.TENTATIVE="TENTATIVE",i))(L||{}),z=(n=>(n.CONFIDENTIAL="CONFIDENTIAL",n.PRIVATE="PRIVATE",n.PUBLIC="PUBLIC",n))(z||{}),U=(n=>(n.CANCELLED="CANCELLED",n.CONFIRMED="CONFIRMED",n.TENTATIVE="TENTATIVE",n))(U||{}),B=(e=>(e.OPAQUE="OPAQUE",e.TRANSPARENT="TRANSPARENT",e))(B||{}),y=class{calendar;data;constructor(t,e){if(this.data={alarms:[],allDay:false,attachments:[],attendees:[],busystatus:null,categories:[],class:null,created:null,description:null,end:null,floating:false,id:crypto.randomUUID(),lastModified:null,location:null,organizer:null,priority:null,recurrenceId:null,repeating:null,sequence:0,stamp:new Date,start:new Date,status:null,summary:"",timezone:null,transparency:null,url:null,x:[]},this.calendar=e,!e)throw new Error("`calendar` option required!");t.id&&this.id(t.id),t.sequence!==void 0&&this.sequence(t.sequence),t.start&&this.start(t.start),t.end!==void 0&&this.end(t.end),t.recurrenceId!==void 0&&this.recurrenceId(t.recurrenceId),t.timezone!==void 0&&this.timezone(t.timezone),t.stamp!==void 0&&this.stamp(t.stamp),t.allDay!==void 0&&this.allDay(t.allDay),t.floating!==void 0&&this.floating(t.floating),t.repeating!==void 0&&this.repeating(t.repeating),t.summary!==void 0&&this.summary(t.summary),t.location!==void 0&&this.location(t.location),t.description!==void 0&&this.description(t.description),t.organizer!==void 0&&this.organizer(t.organizer),t.attendees!==void 0&&this.attendees(t.attendees),t.alarms!==void 0&&this.alarms(t.alarms),t.categories!==void 0&&this.categories(t.categories),t.status!==void 0&&this.status(t.status),t.busystatus!==void 0&&this.busystatus(t.busystatus),t.priority!==void 0&&this.priority(t.priority),t.url!==void 0&&this.url(t.url),t.attachments!==void 0&&this.attachments(t.attachments),t.transparency!==void 0&&this.transparency(t.transparency),t.created!==void 0&&this.created(t.created),t.lastModified!==void 0&&this.lastModified(t.lastModified),t.class!==void 0&&this.class(t.class),t.x!==void 0&&this.x(t.x);}alarms(t){return t?(t.forEach(e=>this.createAlarm(e)),this):this.data.alarms}allDay(t){return t===void 0?this.data.allDay:(this.data.allDay=!!t,this)}attachments(t){return t?(t.forEach(e=>this.createAttachment(e)),this):this.data.attachments}attendees(t){return t?(t.forEach(e=>this.createAttendee(e)),this):this.data.attendees}busystatus(t){return t===void 0?this.data.busystatus:t===null?(this.data.busystatus=null,this):(this.data.busystatus=o(L,t),this)}categories(t){return t?(t.forEach(e=>this.createCategory(e)),this):this.data.categories}class(t){return t===void 0?this.data.class:t===null?(this.data.class=null,this):(this.data.class=o(z,t),this)}createAlarm(t){let e=t instanceof I?t:new I(t,this);return this.data.alarms.push(e),e}createAttachment(t){return this.data.attachments.push(t),this}createAttendee(t){if(t instanceof f)return this.data.attendees.push(t),t;typeof t=="string"&&(t=p("data",t));let e=new f(t,this);return this.data.attendees.push(e),e}createCategory(t){let e=t instanceof c?t:new c(t);return this.data.categories.push(e),e}created(t){return t===void 0?this.data.created:t===null?(this.data.created=null,this):(this.data.created=h(t,"created"),this)}description(t){return t===void 0?this.data.description:t===null?(this.data.description=null,this):(typeof t=="string"?this.data.description={plain:t}:this.data.description=t,this)}end(t){return t===void 0?(this.swapStartAndEndIfRequired(),this.data.end):t===null?(this.data.end=null,this):(this.data.end=h(t,"end"),this)}floating(t){return t===void 0?this.data.floating:(this.data.floating=!!t,this.data.floating&&(this.data.timezone=null),this)}id(t){return t===void 0?this.data.id:(this.data.id=String(t),this)}lastModified(t){return t===void 0?this.data.lastModified:t===null?(this.data.lastModified=null,this):(this.data.lastModified=h(t,"lastModified"),this)}location(t){if(t===void 0)return this.data.location;if(typeof t=="string")return this.data.location={title:t},this;if(t&&("title"in t&&!t.title||t?.geo&&(typeof t.geo.lat!="number"||!isFinite(t.geo.lat)||typeof t.geo.lon!="number"||!isFinite(t.geo.lon))||!("title"in t)&&!t?.geo))throw new Error("`location` isn't formatted correctly. See https://sebbo2002.github.io/ical-generator/develop/reference/classes/ICalEvent.html#location");return this.data.location=t||null,this}organizer(t){return t===void 0?this.data.organizer:t===null?(this.data.organizer=null,this):(this.data.organizer=p("organizer",t),this)}priority(t){if(t===void 0)return this.data.priority;if(t===null)return this.data.priority=null,this;if(t<0||t>9)throw new Error("`priority` is invalid, musst be 0 \u2264 priority \u2264 9.");return this.data.priority=Math.round(t),this}recurrenceId(t){return t===void 0?this.data.recurrenceId:t===null?(this.data.recurrenceId=null,this):(this.data.recurrenceId=h(t,"recurrenceId"),this)}repeating(t){if(t===void 0)return this.data.repeating;if(!t)return this.data.repeating=null,this;if(x(t)||typeof t=="string")return this.data.repeating=t,this;if(this.data.repeating={freq:o(b,t.freq)},t.count){if(!isFinite(t.count))throw new Error("`repeating.count` must be a finite number!");this.data.repeating.count=t.count;}if(t.interval){if(!isFinite(t.interval))throw new Error("`repeating.interval` must be a finite number!");this.data.repeating.interval=t.interval;}if(t.until!==void 0&&(this.data.repeating.until=h(t.until,"repeating.until")),t.byDay){let e=Array.isArray(t.byDay)?t.byDay:[t.byDay];this.data.repeating.byDay=e.map(n=>o(A,n));}if(t.byMonth){let e=Array.isArray(t.byMonth)?t.byMonth:[t.byMonth];this.data.repeating.byMonth=e.map(n=>{if(typeof n!="number"||n<1||n>12)throw new Error("`repeating.byMonth` contains invalid value `"+n+"`!");return n});}if(t.byMonthDay){let e=Array.isArray(t.byMonthDay)?t.byMonthDay:[t.byMonthDay];this.data.repeating.byMonthDay=e.map(n=>{if(typeof n!="number"||n<-31||n>31||n===0)throw new Error("`repeating.byMonthDay` contains invalid value `"+n+"`!");return n});}if(t.bySetPos){if(!this.data.repeating.byDay)throw "`repeating.bySetPos` must be used along with `repeating.byDay`!";let e=Array.isArray(t.bySetPos)?t.bySetPos:[t.bySetPos];this.data.repeating.bySetPos=e.map(n=>{if(typeof n!="number"||n<-366||n>366||n===0)throw "`repeating.bySetPos` contains invalid value `"+n+"`!";return n});}if(t.exclude){let e=Array.isArray(t.exclude)?t.exclude:[t.exclude];this.data.repeating.exclude=e.map((n,i)=>h(n,`repeating.exclude[${i}]`));}return t.startOfWeek&&(this.data.repeating.startOfWeek=o(A,t.startOfWeek)),this}sequence(t){if(t===void 0)return this.data.sequence;let e=parseInt(String(t),10);if(isNaN(e))throw new Error("`sequence` must be a number!");return this.data.sequence=t,this}stamp(t){return t===void 0?this.data.stamp:(this.data.stamp=h(t,"stamp"),this)}start(t){return t===void 0?(this.swapStartAndEndIfRequired(),this.data.start):(this.data.start=h(t,"start"),this)}status(t){return t===void 0?this.data.status:t===null?(this.data.status=null,this):(this.data.status=o(U,t),this)}summary(t){return t===void 0?this.data.summary:(this.data.summary=t?String(t):"",this)}timestamp(t){return t===void 0?this.stamp():this.stamp(t)}timezone(t){return t===void 0&&this.data.timezone!==null?this.data.timezone:t===void 0?this.calendar.timezone():(this.data.timezone=t&&t!=="UTC"?t.toString():null,this.data.timezone&&(this.data.floating=false),this)}toJSON(){let t=null;return x(this.data.repeating)||typeof this.data.repeating=="string"?t=this.data.repeating.toString():this.data.repeating&&(t=Object.assign({},this.data.repeating,{exclude:this.data.repeating.exclude?.map(e=>g(e)),until:g(this.data.repeating.until)||void 0})),this.swapStartAndEndIfRequired(),Object.assign({},this.data,{created:g(this.data.created)||null,end:g(this.data.end)||null,lastModified:g(this.data.lastModified)||null,recurrenceId:g(this.data.recurrenceId)||null,repeating:t,stamp:g(this.data.stamp)||null,start:g(this.data.start)||null,x:this.x()})}toString(){let t="";if(t+=`BEGIN:VEVENT\r
+`,t+="UID:"+this.data.id+`\r
+`,t+="SEQUENCE:"+this.data.sequence+`\r
+`,this.swapStartAndEndIfRequired(),t+="DTSTAMP:"+d(this.calendar.timezone(),this.data.stamp)+`\r
+`,this.data.allDay?(t+="DTSTART;VALUE=DATE:"+d(this.timezone(),this.data.start,true)+`\r
+`,this.data.end&&(t+="DTEND;VALUE=DATE:"+d(this.timezone(),this.data.end,true)+`\r
+`),t+=`X-MICROSOFT-CDO-ALLDAYEVENT:TRUE\r
+`,t+=`X-MICROSOFT-MSNCALENDAR-ALLDAYEVENT:TRUE\r
+`):(t+=E(this.timezone(),"DTSTART",this.data.start,this.data)+`\r
+`,this.data.end&&(t+=E(this.timezone(),"DTEND",this.data.end,this.data)+`\r
+`)),x(this.data.repeating)||typeof this.data.repeating=="string"){let e=this.data.repeating.toString().replace(/\r\n/g,`
+`).split(`
+`).filter(n=>n&&!n.startsWith("DTSTART:")).join(`\r
+`);!e.includes(`\r
+`)&&!e.startsWith("RRULE:")&&(e="RRULE:"+e),t+=e.trim()+`\r
+`;}else this.data.repeating&&(t+="RRULE:FREQ="+this.data.repeating.freq,this.data.repeating.count&&(t+=";COUNT="+this.data.repeating.count),this.data.repeating.interval&&(t+=";INTERVAL="+this.data.repeating.interval),this.data.repeating.until&&(t+=";UNTIL="+d(this.calendar.timezone(),this.data.repeating.until,false,this.floating())),this.data.repeating.byDay&&(t+=";BYDAY="+this.data.repeating.byDay.join(",")),this.data.repeating.byMonth&&(t+=";BYMONTH="+this.data.repeating.byMonth.join(",")),this.data.repeating.byMonthDay&&(t+=";BYMONTHDAY="+this.data.repeating.byMonthDay.join(",")),this.data.repeating.bySetPos&&(t+=";BYSETPOS="+this.data.repeating.bySetPos.join(",")),this.data.repeating.startOfWeek&&(t+=";WKST="+this.data.repeating.startOfWeek),t+=`\r
+`,this.data.repeating.exclude&&(this.data.allDay?t+="EXDATE;VALUE=DATE:"+this.data.repeating.exclude.map(e=>d(this.calendar.timezone(),e,true)).join(",")+`\r
+`:(t+="EXDATE",this.timezone()?t+=";TZID="+this.timezone()+":"+this.data.repeating.exclude.map(e=>d(this.timezone(),e,false,true)).join(",")+`\r
+`:t+=":"+this.data.repeating.exclude.map(e=>d(this.timezone(),e,false,this.floating())).join(",")+`\r
+`)));return this.data.recurrenceId&&(t+=E(this.timezone(),"RECURRENCE-ID",this.data.recurrenceId,this.data)+`\r
+`),t+="SUMMARY:"+r(this.data.summary,false)+`\r
+`,this.data.transparency&&(t+="TRANSP:"+r(this.data.transparency,false)+`\r
+`),this.data.location&&"title"in this.data.location&&this.data.location.title&&(t+="LOCATION:"+r(this.data.location.title+(this.data.location.address?`
+`+this.data.location.address:""),false)+`\r
+`,this.data.location.radius&&this.data.location.geo&&(t+="X-APPLE-STRUCTURED-LOCATION;VALUE=URI;"+(this.data.location.address?"X-ADDRESS="+r(this.data.location.address,false)+";":"")+"X-APPLE-RADIUS="+r(this.data.location.radius,false)+";X-TITLE="+r(this.data.location.title,false)+":geo:"+r(this.data.location.geo?.lat,false)+","+r(this.data.location.geo?.lon,false)+`\r
+`)),this.data.location?.geo?.lat&&this.data.location.geo.lon&&(t+="GEO:"+r(this.data.location.geo.lat,false)+";"+r(this.data.location.geo.lon,false)+`\r
+`),this.data.description&&(t+="DESCRIPTION:"+r(this.data.description.plain,false)+`\r
+`,this.data.description.html&&(t+="X-ALT-DESC;FMTTYPE=text/html:"+r(this.data.description.html,false)+`\r
+`)),this.data.organizer&&(t+='ORGANIZER;CN="'+r(this.data.organizer.name,true)+'"',this.data.organizer.sentBy&&(t+=';SENT-BY="mailto:'+r(this.data.organizer.sentBy,true)+'"'),this.data.organizer.email&&this.data.organizer.mailto&&(t+=";EMAIL="+r(this.data.organizer.email,false)),t+=":",this.data.organizer.email&&(t+="mailto:"+r(this.data.organizer.mailto||this.data.organizer.email,false)),t+=`\r
+`),this.data.attendees.forEach(function(e){t+=e.toString();}),this.data.alarms.forEach(function(e){t+=e.toString();}),this.data.categories.length>0&&(t+="CATEGORIES:"+this.data.categories.map(e=>e.toString()).join()+`\r
+`),this.data.url&&(t+="URL;VALUE=URI:"+r(this.data.url,false)+`\r
+`),this.data.attachments.length>0&&this.data.attachments.forEach(e=>{t+="ATTACH:"+r(e,false)+`\r
+`;}),this.data.status&&(t+="STATUS:"+this.data.status.toUpperCase()+`\r
+`),this.data.busystatus&&(t+="X-MICROSOFT-CDO-BUSYSTATUS:"+this.data.busystatus.toUpperCase()+`\r
+`),this.data.priority!==null&&(t+="PRIORITY:"+this.data.priority+`\r
+`),t+=D(this.data),this.data.created&&(t+="CREATED:"+d(this.calendar.timezone(),this.data.created)+`\r
+`),this.data.lastModified&&(t+="LAST-MODIFIED:"+d(this.calendar.timezone(),this.data.lastModified)+`\r
+`),this.data.class&&(t+="CLASS:"+this.data.class.toUpperCase()+`\r
+`),t+=`END:VEVENT\r
+`,t}transparency(t){return t===void 0?this.data.transparency:t?(this.data.transparency=o(B,t),this):(this.data.transparency=null,this)}uid(t){return t===void 0?this.id():this.id(t)}url(t){return t===void 0?this.data.url:(this.data.url=t?String(t):null,this)}x(t,e){return t===void 0?l(this.data):(typeof t=="string"&&typeof e=="string"&&l(this.data,t,e),typeof t=="object"&&l(this.data,t),this)}swapStartAndEndIfRequired(){if(this.data.start&&this.data.end&&v(this.data.start).getTime()>v(this.data.end).getTime()){let t=this.data.start;this.data.start=this.data.end,this.data.end=t;}}};var P=(m=>(m.ADD="ADD",m.CANCEL="CANCEL",m.COUNTER="COUNTER",m.DECLINECOUNTER="DECLINECOUNTER",m.PUBLISH="PUBLISH",m.REFRESH="REFRESH",m.REPLY="REPLY",m.REQUEST="REQUEST",m))(P||{}),T=class{data;constructor(t={}){this.data={description:null,events:[],method:null,name:null,prodId:"//sebbo.net//ical-generator//EN",scale:null,source:null,timezone:null,ttl:null,url:null,x:[]},t.prodId!==void 0&&this.prodId(t.prodId),t.method!==void 0&&this.method(t.method),t.name!==void 0&&this.name(t.name),t.description!==void 0&&this.description(t.description),t.timezone!==void 0&&this.timezone(t.timezone),t.source!==void 0&&this.source(t.source),t.url!==void 0&&this.url(t.url),t.scale!==void 0&&this.scale(t.scale),t.ttl!==void 0&&this.ttl(t.ttl),t.events!==void 0&&this.events(t.events),t.x!==void 0&&this.x(t.x);}clear(){return this.data.events=[],this}createEvent(t){let e=t instanceof y?t:new y(t,this);return this.data.events.push(e),e}description(t){return t===void 0?this.data.description:(this.data.description=t?String(t):null,this)}events(t){return t?(t.forEach(e=>this.createEvent(e)),this):this.data.events}length(){return this.data.events.length}method(t){return t===void 0?this.data.method:t?(this.data.method=o(P,t),this):(this.data.method=null,this)}name(t){return t===void 0?this.data.name:(this.data.name=t?String(t):null,this)}prodId(t){if(!t)return this.data.prodId;if(typeof t=="string")return this.data.prodId=t,this;if(typeof t!="object")throw new Error("`prodid` needs to be a string or an object!");if(!t.company)throw new Error("`prodid.company` is a mandatory item!");if(!t.product)throw new Error("`prodid.product` is a mandatory item!");let e=(t.language||"EN").toUpperCase();return this.data.prodId="//"+t.company+"//"+t.product+"//"+e,this}scale(t){return t===void 0?this.data.scale:(t===null?this.data.scale=null:this.data.scale=t.toUpperCase(),this)}source(t){return t===void 0?this.data.source:(this.data.source=t||null,this)}timezone(t){return t===void 0?this.data.timezone?.name||null:(t==="UTC"?this.data.timezone=null:typeof t=="string"?this.data.timezone={name:t}:t===null?this.data.timezone=null:this.data.timezone=t,this)}toJSON(){return Object.assign({},this.data,{events:this.data.events.map(t=>t.toJSON()),timezone:this.timezone(),x:this.x()})}toString(){let t="";return t=`BEGIN:VCALENDAR\r
+VERSION:2.0\r
+`,t+="PRODID:-"+this.data.prodId+`\r
+`,this.data.url&&(t+="URL:"+this.data.url+`\r
+`),this.data.source&&(t+="SOURCE;VALUE=URI:"+this.data.source+`\r
+`),this.data.scale&&(t+="CALSCALE:"+this.data.scale+`\r
+`),this.data.method&&(t+="METHOD:"+this.data.method+`\r
+`),this.data.name&&(t+="NAME:"+this.data.name+`\r
+`,t+="X-WR-CALNAME:"+this.data.name+`\r
+`),this.data.description&&(t+="X-WR-CALDESC:"+this.data.description+`\r
+`),this.data.timezone?.generator&&[...new Set([this.timezone(),...this.data.events.map(n=>n.timezone())])].filter(n=>n!==null&&!n.startsWith("/")).forEach(n=>{if(!this.data.timezone?.generator)return;let i=this.data.timezone.generator(n);i&&(t+=i.replace(/\r\n/g,`
+`).replace(/\n/g,`\r
+`).trim()+`\r
+`);}),this.data.timezone?.name&&(t+="TIMEZONE-ID:"+this.data.timezone.name+`\r
+`,t+="X-WR-TIMEZONE:"+this.data.timezone.name+`\r
+`),this.data.ttl&&(t+="REFRESH-INTERVAL;VALUE=DURATION:"+C(this.data.ttl)+`\r
+`,t+="X-PUBLISHED-TTL:"+C(this.data.ttl)+`\r
+`),this.data.events.forEach(e=>t+=e.toString()),t+=D(this.data),t+="END:VCALENDAR",N(t)}ttl(t){return t===void 0?this.data.ttl:(J(t)?this.data.ttl=t.asSeconds():t&&t>0?this.data.ttl=t:this.data.ttl=null,this)}url(t){return t===void 0?this.data.url:(this.data.url=t||null,this)}x(t,e){if(t===void 0)return l(this.data);if(typeof t=="string"&&typeof e=="string")l(this.data,t,e);else if(typeof t=="object")l(this.data,t);else throw new Error("Either key or value is not a string!");return this}};function W(a){return new T(a)}var It=W;
+
+const escapeHtml = (text) => {
+  const map = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+    "/": "&#x2F;"
+  };
+  return text.replace(/[&<>"'/]/g, (char) => map[char]);
+};
+const sanitizeInput = (input, maxLength = 500) => {
+  let sanitized = input.trim();
+  if (sanitized.length > maxLength) {
+    sanitized = sanitized.substring(0, maxLength);
+  }
+  sanitized = sanitized.replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]/g, "");
+  return sanitized;
+};
+const validateEmail = (email) => {
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+  if (!emailRegex.test(email)) return false;
+  if (email.length > 254) return false;
+  if (email.split("@")[0].length > 64) return false;
+  return true;
+};
+const validatePhone = (phone) => {
+  const cleanPhone = phone.replace(/[\s\-\(\)\.]/g, "");
+  if (cleanPhone.length < 8 || cleanPhone.length > 20) return false;
+  const phoneRegex = /^\+?[0-9]{8,20}$/;
+  return phoneRegex.test(cleanPhone);
+};
+const validateName = (name) => {
+  const trimmed = name.trim();
+  if (trimmed.length < 2 || trimmed.length > 100) return false;
+  const nameRegex = /^[a-zA-ZäöüÄÖÜßàáâãèéêìíîòóôõùúûÀÁÂÃÈÉÊÌÍÎÒÓÔÕÙÚÛ\s\-\.']+$/;
+  return nameRegex.test(trimmed);
+};
+const validateCompany = (company) => {
+  if (!company || company.trim() === "") return true;
+  const trimmed = company.trim();
+  if (trimmed.length < 2 || trimmed.length > 150) return false;
+  const companyRegex = /^[a-zA-Z0-9äöüÄÖÜßàáâãèéêìíîòóôõùúûÀÁÂÃÈÉÊÌÍÎÒÓÔÕÙÚÛ\s\-\.'&,/()]+$/;
+  return companyRegex.test(trimmed);
+};
+const validateMessage = (message) => {
+  if (!message || message.trim() === "") return true;
+  const trimmed = message.trim();
+  if (trimmed.length > 500) return false;
+  return true;
+};
+const validateDate = (dateString) => {
+  const date = new Date(dateString);
+  return !isNaN(date.getTime());
+};
+const validateTime = (timeString) => {
+  const timeRegex = /^([01][0-9]|2[0-3]):([0-5][0-9])$/;
+  return timeRegex.test(timeString);
+};
+const validateFormData = (formData) => {
+  const errors = {};
+  const sanitized = {
+    name: sanitizeInput(formData.name, 100),
+    company: sanitizeInput(formData.company, 150),
+    phone: sanitizeInput(formData.phone, 30),
+    email: sanitizeInput(formData.email, 254),
+    message: sanitizeInput(formData.message, 500),
+    date: formData.date ? sanitizeInput(formData.date, 20) : void 0,
+    time: formData.time ? sanitizeInput(formData.time, 10) : void 0
+  };
+  if (!validateName(sanitized.name)) {
+    errors.name = "Bitte geben Sie einen gültigen Namen ein (mind. 2 Zeichen, nur Buchstaben)";
+  }
+  if (sanitized.company && !validateCompany(sanitized.company)) {
+    errors.company = "Bitte geben Sie einen gültigen Firmennamen ein";
+  }
+  if (!validatePhone(sanitized.phone)) {
+    errors.phone = "Bitte geben Sie eine gültige Telefonnummer ein (mind. 8 Ziffern)";
+  }
+  if (!validateEmail(sanitized.email)) {
+    errors.email = "Bitte geben Sie eine gültige E-Mail-Adresse ein";
+  }
+  if (sanitized.message && !validateMessage(sanitized.message)) {
+    errors.message = "Nachricht darf maximal 500 Zeichen lang sein";
+  }
+  if (sanitized.date && !validateDate(sanitized.date)) {
+    errors.date = "Ungültiges Datum";
+  }
+  if (sanitized.time && !validateTime(sanitized.time)) {
+    errors.time = "Ungültige Uhrzeit (Format: HH:mm)";
+  }
+  return {
+    valid: Object.keys(errors).length === 0,
+    errors,
+    sanitized
+  };
+};
+
+function generateICS(appointment, settings) {
+  const calendar = It({ name: `Termin ${settings.companyName}` });
+  const appointmentDate = new Date(appointment.date);
+  const [startHour, startMin] = appointment.startTime.split(":").map(Number);
+  const [endHour, endMin] = appointment.endTime.split(":").map(Number);
+  const startDateTime = new Date(appointmentDate);
+  startDateTime.setHours(startHour, startMin, 0, 0);
+  const endDateTime = new Date(appointmentDate);
+  endDateTime.setHours(endHour, endMin, 0, 0);
+  calendar.createEvent({
+    start: startDateTime,
+    end: endDateTime,
+    summary: settings.eventName ? `Termin bei ${settings.eventName}` : `Termin bei ${settings.companyName}`,
+    description: appointment.message ? `Termin mit ${appointment.name}${appointment.company ? ` (${appointment.company})` : ""}
+
+Nachricht:
+${appointment.message}
+
+Telefon: ${appointment.phone}
+E-Mail: ${appointment.email}` : `Termin mit ${appointment.name}${appointment.company ? ` (${appointment.company})` : ""}
+
+Telefon: ${appointment.phone}
+E-Mail: ${appointment.email}`,
+    location: settings.eventName && settings.standInfo ? `${settings.eventName} | ${settings.standInfo}` : settings.standInfo || settings.companyAddress,
+    url: appointment.appointmentUrl,
+    organizer: {
+      name: settings.companyName,
+      email: settings.companyEmail
+    },
+    attendees: [
+      {
+        name: appointment.name,
+        email: appointment.email,
+        rsvp: true
+      }
+    ],
+    status: appointment.status === "confirmed" ? "CONFIRMED" : "TENTATIVE"
+  });
+  return calendar.toString();
+}
+function formatDate$1(dateString) {
+  const date = new Date(dateString);
+  const options = {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  };
+  return date.toLocaleDateString("de-DE", options);
+}
+function getBaseTemplate(settings, headerTitle, headerSubtitle, statusBadge, content) {
+  const primaryColor = settings.primaryColor || "#2d62ff";
+  const logoHtml = settings.logoUrl ? `<img src="${escapeHtml(settings.logoUrl)}" alt="${escapeHtml(settings.companyName)}" style="max-width: 200px; height: auto; margin-bottom: 20px;" />` : "";
+  return `
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(headerTitle)}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden;">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, ${primaryColor} 0%, ${shadeColor(primaryColor, -20)} 100%); padding: 40px 30px; text-align: center;">
+              ${logoHtml}
+              <h1 style="color: #ffffff; font-size: 28px; margin: 0; font-weight: 700;">
+                ${escapeHtml(headerTitle)}
+              </h1>
+              <p style="color: #e0e7ff; font-size: 16px; margin: 10px 0 0 0;">
+                ${escapeHtml(headerSubtitle)}
+              </p>
+            </td>
+          </tr>
+
+          ${statusBadge ? `
+          <!-- Status Badge -->
+          <tr>
+            <td style="padding: 20px 30px;">
+              <div style="background-color: ${statusBadge.bg}; border: 2px solid ${statusBadge.color}; border-radius: 12px; padding: 15px; text-align: center;">
+                <span style="color: ${statusBadge.color}; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">
+                  Status: ${escapeHtml(statusBadge.text)}
+                </span>
+              </div>
+            </td>
+          </tr>
+          ` : ""}
+
+          ${content}
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 30px; background-color: #f9fafb; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 13px; margin: 0 0 10px 0;">
+                Diese E-Mail wurde automatisch vom Terminbuchungs-System generiert.
+              </p>
+              <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                ${escapeHtml(settings.companyName)} • ${escapeHtml(settings.companyAddress)}
+              </p>
+              <p style="color: #9ca3af; font-size: 12px; margin: 10px 0 0 0;">
+                Bei Fragen: 
+                <a href="tel:${escapeHtml(settings.companyPhone)}" style="color: ${primaryColor}; text-decoration: none;">${escapeHtml(settings.companyPhone)}</a> • 
+                <a href="mailto:${escapeHtml(settings.companyEmail)}" style="color: ${primaryColor}; text-decoration: none;">${escapeHtml(settings.companyEmail)}</a>
+                ${settings.companyWebsite ? ` • <a href="${escapeHtml(settings.companyWebsite)}" style="color: ${primaryColor}; text-decoration: none;">${escapeHtml(settings.companyWebsite.replace(/^https?:\/\//, ""))}</a>` : ""}
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+}
+function shadeColor(color, percent) {
+  const num = parseInt(color.replace("#", ""), 16);
+  const amt = Math.round(2.55 * percent);
+  const R = (num >> 16) + amt;
+  const G = (num >> 8 & 255) + amt;
+  const B = (num & 255) + amt;
+  return "#" + (16777216 + (R < 255 ? R < 1 ? 0 : R : 255) * 65536 + (G < 255 ? G < 1 ? 0 : G : 255) * 256 + (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+}
+function getAppointmentDetailsTable(appointment) {
+  return `
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; border-radius: 12px; overflow: hidden;">
+  <tr>
+    <td style="padding: 15px 20px; border-bottom: 1px solid #e5e7eb;">
+      <strong style="color: #6b7280; font-size: 13px; display: block; margin-bottom: 5px;">DATUM & UHRZEIT</strong>
+      <span style="color: #111827; font-size: 18px; font-weight: 700;">${escapeHtml(formatDate$1(appointment.date))} um ${escapeHtml(appointment.startTime)} Uhr</span>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding: 15px 20px; border-bottom: 1px solid #e5e7eb;">
+      <strong style="color: #6b7280; font-size: 13px; display: block; margin-bottom: 5px;">NAME</strong>
+      <span style="color: #111827; font-size: 16px;">${escapeHtml(appointment.name)}</span>
+    </td>
+  </tr>
+  ${appointment.company ? `
+  <tr>
+    <td style="padding: 15px 20px; border-bottom: 1px solid #e5e7eb;">
+      <strong style="color: #6b7280; font-size: 13px; display: block; margin-bottom: 5px;">FIRMA</strong>
+      <span style="color: #111827; font-size: 16px;">${escapeHtml(appointment.company)}</span>
+    </td>
+  </tr>
+  ` : ""}
+  <tr>
+    <td style="padding: 15px 20px; border-bottom: 1px solid #e5e7eb;">
+      <strong style="color: #6b7280; font-size: 13px; display: block; margin-bottom: 5px;">E-MAIL</strong>
+      <a href="mailto:${escapeHtml(appointment.email)}" style="color: #2d62ff; font-size: 16px; text-decoration: none;">${escapeHtml(appointment.email)}</a>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding: 15px 20px;">
+      <strong style="color: #6b7280; font-size: 13px; display: block; margin-bottom: 5px;">TELEFON</strong>
+      <a href="tel:${escapeHtml(appointment.phone)}" style="color: #2d62ff; font-size: 16px; text-decoration: none;">${escapeHtml(appointment.phone)}</a>
+    </td>
+  </tr>
+</table>
+  `;
+}
+function generateCustomerRequestEmail(appointment, settings) {
+  const primaryColor = settings.primaryColor || "#2d62ff";
+  const content = `
+    <!-- Main Message -->
+    <tr>
+      <td style="padding: 30px 30px 20px 30px;">
+        <p style="color: #374151; font-size: 16px; line-height: 1.8; margin: 0; text-align: center;">
+          Vielen Dank für Ihre Terminanfrage!<br><br>
+          <strong style="color: #111827;">Wir haben Ihre Anfrage erhalten und werden diese schnellstmöglich bearbeiten.</strong><br>
+          Sie erhalten eine weitere E-Mail, sobald Ihr Termin bestätigt wurde.
+        </p>
+      </td>
+    </tr>
+
+    <!-- Appointment Details -->
+    <tr>
+      <td style="padding: 0 30px 20px 30px;">
+        <h2 style="color: #111827; font-size: 20px; margin: 0 0 20px 0; font-weight: 600; text-align: center;">
+          📅 Ihre Termin-Details
+        </h2>
+        ${getAppointmentDetailsTable(appointment)}
+      </td>
+    </tr>
+
+    ${appointment.message ? `
+    <!-- Message -->
+    <tr>
+      <td style="padding: 0 30px 20px 30px;">
+        <h2 style="color: #111827; font-size: 20px; margin: 0 0 15px 0; font-weight: 600;">
+          💬 Ihre Nachricht
+        </h2>
+        <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; border-left: 4px solid ${primaryColor};">
+          <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${escapeHtml(appointment.message)}</p>
+        </div>
+      </td>
+    </tr>
+    ` : ""}
+
+    <!-- CTA -->
+    <tr>
+      <td style="padding: 0 30px 30px 30px;">
+        <a href="${escapeHtml(appointment.appointmentUrl)}" style="display: block; background-color: ${primaryColor}; color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 12px; text-align: center; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(45, 98, 255, 0.3);">
+          Termin-Details ansehen →
+        </a>
+      </td>
+    </tr>
+
+    <!-- Pending Notice -->
+    <tr>
+      <td style="padding: 0 30px 30px 30px;">
+        <div style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 20px;">
+          <p style="color: #1e40af; font-size: 14px; line-height: 1.6; margin: 0;">
+            <strong>💡 Hinweis:</strong> Ihr Termin ist noch nicht bestätigt. 
+            Sie erhalten eine Bestätigungs-E-Mail, sobald wir Ihre Anfrage geprüft haben.
+          </p>
+        </div>
+      </td>
+    </tr>
+  `;
+  return getBaseTemplate(
+    settings,
+    "⏳ Terminanfrage eingegangen",
+    "Wir haben Ihre Anfrage erhalten",
+    { text: "Ausstehend", color: "#ca8a04", bg: "#fef3c7" },
+    content
+  );
+}
+function generateCustomerConfirmationEmail(appointment, settings) {
+  const primaryColor = settings.primaryColor || "#2d62ff";
+  const content = `
+    <!-- Main Message -->
+    <tr>
+      <td style="padding: 30px 30px 20px 30px;">
+        <p style="color: #374151; font-size: 16px; line-height: 1.8; margin: 0; text-align: center;">
+          Ihr Termin wurde erfolgreich bestätigt!<br><br>
+          <strong style="color: #111827;">Wir freuen uns auf Ihren Besuch.</strong>
+        </p>
+      </td>
+    </tr>
+
+    <!-- Appointment Details -->
+    <tr>
+      <td style="padding: 0 30px 20px 30px;">
+        <h2 style="color: #111827; font-size: 20px; margin: 0 0 20px 0; font-weight: 600; text-align: center;">
+          📅 Ihre Termin-Details
+        </h2>
+        ${getAppointmentDetailsTable(appointment)}
+      </td>
+    </tr>
+
+    <!-- CTA -->
+    <tr>
+      <td style="padding: 0 30px 30px 30px;">
+        <a href="${escapeHtml(appointment.appointmentUrl)}" style="display: block; background-color: ${primaryColor}; color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 12px; text-align: center; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(45, 98, 255, 0.3);">
+          Termin-Details ansehen →
+        </a>
+      </td>
+    </tr>
+
+    <!-- Important Info -->
+    ${settings.standInfo ? `
+    <tr>
+      <td style="padding: 0 30px 30px 30px;">
+        <div style="background-color: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px;">
+          <h3 style="color: #15803d; font-size: 16px; margin: 0 0 10px 0; font-weight: 600;">
+            📍 Wichtige Informationen
+          </h3>
+          <p style="color: #166534; font-size: 14px; line-height: 1.6; margin: 0;">
+            ${settings.eventName ? `<strong>Event:</strong> ${escapeHtml(settings.eventName)}<br>` : ""}
+            <strong>Ort:</strong> ${escapeHtml(settings.standInfo)}<br>
+            <strong>Bitte erscheinen Sie pünktlich.</strong> Bei Fragen oder falls Sie den Termin nicht wahrnehmen können, 
+            nutzen Sie bitte den obigen Link.
+          </p>
+        </div>
+      </td>
+    </tr>
+    ` : ""}
+
+    <!-- Calendar Attachment Info -->
+    <tr>
+      <td style="padding: 0 30px 30px 30px;">
+        <div style="background-color: #fef3c7; border: 2px solid #fbbf24; border-radius: 12px; padding: 15px; text-align: center;">
+          <p style="color: #92400e; font-size: 13px; margin: 0;">
+            📆 <strong>Dieser E-Mail ist eine Kalenderdatei (.ics) angehängt.</strong><br>
+            Sie können den Termin direkt in Ihren Kalender importieren.
+          </p>
+        </div>
+      </td>
+    </tr>
+  `;
+  return getBaseTemplate(
+    settings,
+    "✅ Terminbestätigung",
+    "Ihr Termin wurde erfolgreich bestätigt",
+    { text: "Bestätigt", color: "#16a34a", bg: "#dcfce7" },
+    content
+  );
+}
+function generateCustomerCancellationEmail(appointment, settings, reason = "cancelled") {
+  const primaryColor = settings.primaryColor || "#2d62ff";
+  const isRejected = reason === "rejected";
+  const headerTitle = isRejected ? "❌ Terminanfrage abgelehnt" : "❌ Termin storniert";
+  const headerSubtitle = isRejected ? "Leider konnten wir Ihre Anfrage nicht annehmen" : "Ihr Termin wurde storniert";
+  const mainMessage = isRejected ? "Leider konnten wir Ihre Terminanfrage nicht annehmen." : "Ihr Termin wurde storniert.";
+  const additionalInfo = isRejected ? "Der gewünschte Termin war nicht verfügbar oder konnte aus anderen Gründen nicht bestätigt werden." : "Sollten Sie weitere Fragen haben oder einen neuen Termin vereinbaren möchten, kontaktieren Sie uns gerne.";
+  const content = `
+    <!-- Main Message -->
+    <tr>
+      <td style="padding: 30px 30px 20px 30px;">
+        <p style="color: #374151; font-size: 16px; line-height: 1.8; margin: 0; text-align: center;">
+          ${mainMessage}<br><br>
+          <strong style="color: #111827;">${additionalInfo}</strong>
+        </p>
+      </td>
+    </tr>
+
+    <!-- Appointment Details -->
+    <tr>
+      <td style="padding: 0 30px 20px 30px;">
+        <h2 style="color: #111827; font-size: 20px; margin: 0 0 20px 0; font-weight: 600; text-align: center;">
+          📅 Betroffener Termin
+        </h2>
+        ${getAppointmentDetailsTable(appointment)}
+      </td>
+    </tr>
+
+    <!-- Contact Info -->
+    <tr>
+      <td style="padding: 0 30px 30px 30px;">
+        <div style="background-color: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px;">
+          <h3 style="color: #15803d; font-size: 16px; margin: 0 0 10px 0; font-weight: 600;">
+            💬 Haben Sie Fragen?
+          </h3>
+          <p style="color: #166534; font-size: 14px; line-height: 1.6; margin: 0;">
+            Wir sind gerne für Sie da und helfen Ihnen weiter.<br><br>
+            <strong>Telefon:</strong> <a href="tel:${escapeHtml(settings.companyPhone)}" style="color: ${primaryColor}; text-decoration: none;">${escapeHtml(settings.companyPhone)}</a><br>
+            <strong>E-Mail:</strong> <a href="mailto:${escapeHtml(settings.companyEmail)}" style="color: ${primaryColor}; text-decoration: none;">${escapeHtml(settings.companyEmail)}</a>
+            ${settings.companyWebsite ? `<br><strong>Website:</strong> <a href="${escapeHtml(settings.companyWebsite)}" style="color: ${primaryColor}; text-decoration: none;">${escapeHtml(settings.companyWebsite)}</a>` : ""}
+          </p>
+        </div>
+      </td>
+    </tr>
+
+    ${isRejected ? `
+    <!-- New Booking Option -->
+    <tr>
+      <td style="padding: 0 30px 30px 30px;">
+        <div style="background-color: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 20px; text-align: center;">
+          <p style="color: #1e40af; font-size: 14px; line-height: 1.6; margin: 0 0 15px 0;">
+            <strong>Möchten Sie einen anderen Termin buchen?</strong><br>
+            Schauen Sie sich gerne unsere verfügbaren Termine an.
+          </p>
+          <a href="${escapeHtml(appointment.appointmentUrl.replace(/\/termin\/.*$/, ""))}" style="display: inline-block; background-color: ${primaryColor}; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+            Neuen Termin buchen →
+          </a>
+        </div>
+      </td>
+    </tr>
+    ` : ""}
+  `;
+  return getBaseTemplate(
+    settings,
+    headerTitle,
+    headerSubtitle,
+    { text: isRejected ? "Abgelehnt" : "Storniert", color: "#dc2626", bg: "#fee2e2" },
+    content
+  );
+}
+function generateCustomerReminderEmail(appointment, settings) {
+  const primaryColor = settings.primaryColor || "#2d62ff";
+  const content = `
+    <!-- Main Message -->
+    <tr>
+      <td style="padding: 30px 30px 20px 30px;">
+        <p style="color: #374151; font-size: 16px; line-height: 1.8; margin: 0; text-align: center;">
+          Guten Tag ${escapeHtml(appointment.name)},<br><br>
+          <strong style="color: #111827;">Dies ist eine freundliche Erinnerung an Ihren morgigen Termin.</strong><br>
+          Wir freuen uns auf Ihren Besuch!
+        </p>
+      </td>
+    </tr>
+
+    <!-- Appointment Details -->
+    <tr>
+      <td style="padding: 0 30px 20px 30px;">
+        <h2 style="color: #111827; font-size: 20px; margin: 0 0 20px 0; font-weight: 600; text-align: center;">
+          📅 Ihre Termin-Details
+        </h2>
+        ${getAppointmentDetailsTable(appointment)}
+      </td>
+    </tr>
+
+    <!-- CTA -->
+    <tr>
+      <td style="padding: 0 30px 20px 30px;">
+        <a href="${escapeHtml(appointment.appointmentUrl)}" style="display: block; background-color: ${primaryColor}; color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 12px; text-align: center; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(45, 98, 255, 0.3); margin-bottom: 12px;">
+          Termin-Details ansehen →
+        </a>
+      </td>
+    </tr>
+
+    <!-- Cancellation Option -->
+    <tr>
+      <td style="padding: 0 30px 30px 30px;">
+        <div style="background-color: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; padding: 20px; text-align: center;">
+          <p style="color: #6b7280; font-size: 14px; margin: 0 0 12px 0;">
+            <strong>Ihnen ist etwas dazwischen gekommen?</strong>
+          </p>
+          <p style="color: #6b7280; font-size: 13px; margin: 0 0 16px 0; line-height: 1.6;">
+            Kein Problem! Sie können Ihren Termin jederzeit stornieren.
+          </p>
+          <a href="${escapeHtml(appointment.appointmentUrl)}" style="display: inline-block; background-color: #ffffff; color: #6b7280; text-decoration: none; padding: 10px 24px; border: 2px solid #d1d5db; border-radius: 8px; font-weight: 600; font-size: 14px;">
+            Termin stornieren
+          </a>
+        </div>
+      </td>
+    </tr>
+
+    <!-- Important Info -->
+    ${settings.standInfo ? `
+    <tr>
+      <td style="padding: 0 30px 30px 30px;">
+        <div style="background-color: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px;">
+          <h3 style="color: #15803d; font-size: 16px; margin: 0 0 10px 0; font-weight: 600;">
+            📍 Wichtige Informationen
+          </h3>
+          <p style="color: #166534; font-size: 14px; line-height: 1.6; margin: 0;">
+            ${settings.eventName ? `<strong>Event:</strong> ${escapeHtml(settings.eventName)}<br>` : ""}
+            <strong>Ort:</strong> ${escapeHtml(settings.standInfo)}<br>
+            <strong>Bitte erscheinen Sie pünktlich.</strong>
+          </p>
+        </div>
+      </td>
+    </tr>
+    ` : ""}
+  `;
+  return getBaseTemplate(
+    settings,
+    "⏰ Erinnerung: Ihr Termin morgen",
+    "Wir freuen uns auf Sie!",
+    null,
+    content
+  );
+}
+function generateAdminNotificationEmail(appointment, settings, action) {
+  const primaryColor = settings.primaryColor || "#2d62ff";
+  let headerTitle = "";
+  let headerSubtitle = "";
+  let statusBadge = null;
+  let actionRequired = false;
+  switch (action) {
+    case "requested":
+      headerTitle = "⏳ Neue Terminanfrage";
+      headerSubtitle = "Eine Terminanfrage wartet auf Ihre Bestätigung";
+      statusBadge = { text: "Ausstehend", color: "#ca8a04", bg: "#fef3c7" };
+      actionRequired = true;
+      break;
+    case "confirmed":
+      headerTitle = "✅ Termin bestätigt";
+      headerSubtitle = "Ein Termin wurde automatisch bestätigt";
+      statusBadge = { text: "Bestätigt", color: "#16a34a", bg: "#dcfce7" };
+      break;
+    case "cancelled":
+      headerTitle = "❌ Termin storniert";
+      headerSubtitle = "Ein Termin wurde storniert";
+      statusBadge = { text: "Storniert", color: "#dc2626", bg: "#fee2e2" };
+      break;
+    case "rejected":
+      headerTitle = "❌ Terminanfrage abgelehnt";
+      headerSubtitle = "Eine Terminanfrage wurde abgelehnt";
+      statusBadge = { text: "Abgelehnt", color: "#dc2626", bg: "#fee2e2" };
+      break;
+  }
+  const content = `
+    <!-- Appointment Details -->
+    <tr>
+      <td style="padding: 0 30px 20px 30px;">
+        <h2 style="color: #111827; font-size: 20px; margin: 0 0 20px 0; font-weight: 600;">
+          📅 Termin-Details
+        </h2>
+        ${getAppointmentDetailsTable(appointment)}
+      </td>
+    </tr>
+
+    ${appointment.message ? `
+    <!-- Message -->
+    <tr>
+      <td style="padding: 0 30px 20px 30px;">
+        <h2 style="color: #111827; font-size: 20px; margin: 0 0 15px 0; font-weight: 600;">
+          💬 Nachricht
+        </h2>
+        <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; border-left: 4px solid ${primaryColor};">
+          <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${escapeHtml(appointment.message)}</p>
+        </div>
+      </td>
+    </tr>
+    ` : ""}
+
+    <!-- CTA -->
+    <tr>
+      <td style="padding: 0 30px 30px 30px;">
+        <a href="${escapeHtml(appointment.appointmentUrl)}" style="display: block; background-color: ${primaryColor}; color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 12px; text-align: center; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(45, 98, 255, 0.3);">
+          Im Admin-Panel öffnen →
+        </a>
+      </td>
+    </tr>
+
+    ${actionRequired ? `
+    <!-- Action Required -->
+    <tr>
+      <td style="padding: 0 30px 30px 30px;">
+        <div style="background-color: #fef3c7; border: 2px solid #fbbf24; border-radius: 12px; padding: 20px;">
+          <p style="color: #92400e; font-size: 14px; line-height: 1.6; margin: 0;">
+            <strong>⚠️ Aktion erforderlich:</strong> Dieser Termin wartet auf Ihre Bestätigung. 
+            Bitte prüfen Sie die Anfrage im Admin-Panel.
+          </p>
+        </div>
+      </td>
+    </tr>
+    ` : ""}
+  `;
+  return getBaseTemplate(
+    settings,
+    headerTitle,
+    headerSubtitle,
+    statusBadge,
+    content
+  );
+}
+
+async function loadEmailSettings(env) {
+  try {
+    const settingsJson = await env.APPOINTMENTS_KV?.get("settings");
+    if (settingsJson) {
+      const settings = JSON.parse(settingsJson);
+      const eventYear = settings.eventYear || (/* @__PURE__ */ new Date()).getFullYear();
+      const eventName = `${settings.eventName || "OPTI"} ${eventYear.toString().slice(-2)}`;
+      return {
+        companyName: settings.companyName || "MORO",
+        companyAddress: settings.companyAddress || "Eupener Str. 124, 50933 Köln",
+        companyPhone: settings.companyPhone || "+49 221 292 40 500",
+        companyEmail: settings.companyEmail || "info@moro-gmbh.de",
+        companyWebsite: settings.companyWebsite,
+        logoUrl: settings.logoUrl,
+        primaryColor: settings.primaryColor || "#2d62ff",
+        standInfo: `${settings.eventLocation || "Stand B4.110"}, ${settings.eventHall || "Messe München"}`,
+        eventName,
+        // z.B. "OPTI 26"
+        eventYear
+        // z.B. 2026
+      };
+    }
+  } catch (error) {
+    console.error("Error loading email settings:", error);
+  }
+  const fallbackYear = (/* @__PURE__ */ new Date()).getFullYear();
+  return {
+    companyName: "MORO",
+    companyAddress: "Eupener Str. 124, 50933 Köln",
+    companyPhone: "+49 221 292 40 500",
+    companyEmail: "info@moro-gmbh.de",
+    primaryColor: "#2d62ff",
+    standInfo: "Stand B4.110, Messe München",
+    eventName: `OPTI ${fallbackYear.toString().slice(-2)}`,
+    eventYear: fallbackYear
+  };
+}
+async function sendViaGmail(options, config) {
+  try {
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        client_id: config.clientId,
+        client_secret: config.clientSecret,
+        refresh_token: config.refreshToken,
+        grant_type: "refresh_token"
+      })
+    });
+    if (!tokenResponse.ok) {
+      const error = await tokenResponse.text();
+      console.error("Gmail token error:", error);
+      return false;
+    }
+    const { access_token } = await tokenResponse.json();
+    const boundary = `boundary_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    let emailContent = "";
+    if (options.icsAttachment) {
+      emailContent = [
+        `From: ${options.from || config.userEmail}`,
+        `To: ${options.to}`,
+        `Subject: ${options.subject}`,
+        "MIME-Version: 1.0",
+        `Content-Type: multipart/mixed; boundary="${boundary}"`,
+        "",
+        `--${boundary}`,
+        "Content-Type: text/html; charset=utf-8",
+        "",
+        options.html,
+        "",
+        `--${boundary}`,
+        "Content-Type: text/calendar; charset=utf-8; method=REQUEST",
+        "Content-Transfer-Encoding: base64",
+        'Content-Disposition: attachment; filename="termin.ics"',
+        "",
+        btoa(unescape(encodeURIComponent(options.icsAttachment))),
+        "",
+        `--${boundary}--`
+      ].join("\r\n");
+    } else {
+      emailContent = [
+        `From: ${options.from || config.userEmail}`,
+        `To: ${options.to}`,
+        `Subject: ${options.subject}`,
+        "MIME-Version: 1.0",
+        "Content-Type: text/html; charset=utf-8",
+        "",
+        options.html
+      ].join("\r\n");
+    }
+    const encodedEmail = btoa(unescape(encodeURIComponent(emailContent))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    const sendResponse = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${access_token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ raw: encodedEmail })
+    });
+    if (!sendResponse.ok) {
+      const error = await sendResponse.text();
+      console.error("Gmail send error:", error);
+      return false;
+    }
+    console.log("✅ Email sent via Gmail API");
+    return true;
+  } catch (error) {
+    console.error("Error sending email via Gmail:", error);
+    return false;
+  }
+}
+async function sendEmail(options, env) {
+  const googleClientId = env?.GOOGLE_CLIENT_ID || "";
+  const googleClientSecret = env?.GOOGLE_CLIENT_SECRET || "";
+  const googleRefreshToken = env?.GOOGLE_REFRESH_TOKEN || "";
+  const googleUserEmail = env?.GOOGLE_USER_EMAIL || undefined                                 ;
+  if (googleClientId && googleClientSecret && googleRefreshToken && googleUserEmail) {
+    console.log("📧 Sending email via Gmail API...");
+    const success = await sendViaGmail(options, {
+      clientId: googleClientId,
+      clientSecret: googleClientSecret,
+      refreshToken: googleRefreshToken,
+      userEmail: googleUserEmail
+    });
+    if (success) {
+      console.log("✅ Email sent successfully via Gmail");
+      return true;
+    }
+    console.warn("⚠️ Gmail API failed");
+    return false;
+  }
+  console.warn("⚠️ Gmail API not configured. Skipping email notification.");
+  return false;
+}
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  const options = {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  };
+  return date.toLocaleDateString("de-DE", options);
+}
+function convertToAppointmentData(data) {
+  const [hours, minutes] = data.time.split(":").map(Number);
+  const endDate = /* @__PURE__ */ new Date();
+  endDate.setHours(hours, minutes + 30);
+  const endTime = `${endDate.getHours().toString().padStart(2, "0")}:${endDate.getMinutes().toString().padStart(2, "0")}`;
+  return {
+    id: "",
+    name: data.name,
+    email: data.email,
+    company: data.company,
+    phone: data.phone || "",
+    date: data.day,
+    startTime: data.time,
+    endTime,
+    message: data.message,
+    status: data.status,
+    appointmentUrl: data.appointmentUrl
+  };
+}
+async function sendCustomerNotification(data, env) {
+  const settings = await loadEmailSettings(env);
+  const appointment = convertToAppointmentData(data);
+  let html = "";
+  let subject = "";
+  let icsAttachment = void 0;
+  switch (data.action) {
+    case "requested":
+      html = generateCustomerRequestEmail(appointment, settings);
+      subject = `⏳ Ihre Terminanfrage für ${formatDate(data.day)} um ${data.time}`;
+      break;
+    case "instant-booked":
+    case "confirmed":
+      html = generateCustomerConfirmationEmail(appointment, settings);
+      subject = `✅ Terminbestätigung: ${formatDate(data.day)} um ${data.time}`;
+      icsAttachment = generateICS(appointment, settings);
+      break;
+    case "cancelled":
+      html = generateCustomerCancellationEmail(appointment, settings, "cancelled");
+      subject = `❌ Termin storniert: ${formatDate(data.day)} um ${data.time}`;
+      break;
+    case "rejected":
+      html = generateCustomerCancellationEmail(appointment, settings, "rejected");
+      subject = `❌ Terminanfrage abgelehnt: ${formatDate(data.day)} um ${data.time}`;
+      break;
+    default:
+      console.error(`Unknown action: ${data.action}`);
+      return false;
+  }
+  return await sendEmail({
+    to: data.email,
+    subject,
+    html,
+    icsAttachment,
+    from: `${settings.companyName} <${settings.companyEmail}>`
+  }, env);
+}
+async function sendAdminNotification(data, adminEmail, env) {
+  const settings = await loadEmailSettings(env);
+  const appointment = convertToAppointmentData(data);
+  const html = generateAdminNotificationEmail(appointment, settings, data.action);
+  let subject = "";
+  switch (data.action) {
+    case "requested":
+      subject = `⏳ Neue Terminanfrage: ${data.name} am ${formatDate(data.day)} um ${data.time}`;
+      break;
+    case "confirmed":
+      subject = `✅ Termin bestätigt: ${data.name} am ${formatDate(data.day)} um ${data.time}`;
+      break;
+    case "cancelled":
+      subject = `❌ Termin storniert: ${data.name} am ${formatDate(data.day)} um ${data.time}`;
+      break;
+    case "rejected":
+      subject = `❌ Termin abgelehnt: ${data.name} am ${formatDate(data.day)} um ${data.time}`;
+      break;
+  }
+  return await sendEmail({
+    to: adminEmail,
+    subject,
+    html,
+    from: `${settings.companyName} - Terminbuchung <${settings.companyEmail}>`
+  }, env);
+}
+async function sendReminderEmail(data, env) {
+  const settings = await loadEmailSettings(env);
+  const appointment = convertToAppointmentData({
+    ...data,
+    message: "",
+    status: "confirmed"
+  });
+  const html = generateCustomerReminderEmail(appointment, settings);
+  return await sendEmail({
+    to: data.email,
+    subject: `⏰ Erinnerung: Ihr Termin morgen um ${data.time}`,
+    html,
+    from: `${settings.companyName} <${settings.companyEmail}>`
+  }, env);
+}
+
+export { sendAdminNotification as a, sendReminderEmail as b, sendCustomerNotification as s, validateFormData as v };

@@ -1,0 +1,147 @@
+/**
+ * Component-specific fixes
+ * Fixes für Buttons, Texte, Formulare etc.
+ */
+
+/* Fix für weiße Buttons - sichtbarer Text */
+button[class*="bg-white"],
+button[class*="bg-gray-50"],
+.bg-white button,
+.bg-gray-50 button {
+  color: #1f2937 !important; /* gray-800 */
+}
+
+button[class*="hover:bg-white"]:hover,
+button[class*="hover:bg-gray"]:hover {
+  color: #1f2937 !important;
+}
+
+/* Sicherstellen dass outline Buttons dunklen Text haben */
+button[class*="variant-outline"],
+button[class*="border-"]:not([class*="bg-"]) {
+  color: #1f2937 !important;
+}
+
+/* ABER: Farbige outline Buttons behalten ihre Farbe */
+button[class*="text-orange"],
+button[class*="text-purple"],
+button[class*="text-red"],
+button[class*="text-green"],
+button[class*="text-blue"] {
+  color: inherit !important;
+}
+
+/* Spezifische Fix für AlertDialog Cancel Buttons */
+[class*="AlertDialogCancel"] {
+  color: #1f2937 !important;
+}
+
+/* AlertDialog Buttons: Standardmäßig dunkler Text */
+[role="alertdialog"] button:not([class*="bg-red"]):not([class*="bg-orange"]):not([class*="bg-green"]):not([class*="bg-blue"]):not([class*="bg-purple"]):not([class*="bg-black"]):not([class*="bg-primary"]):not([class*="bg-destructive"]) {
+  color: #1f2937 !important;
+}
+
+/* Aber für farbige Buttons in AlertDialogs: weiße Schrift */
+[role="alertdialog"] button[class*="bg-red"],
+[role="alertdialog"] button[class*="bg-orange"],
+[role="alertdialog"] button[class*="bg-green"],
+[role="alertdialog"] button[class*="bg-blue"],
+[role="alertdialog"] button[class*="bg-purple"],
+[role="alertdialog"] button[class*="bg-black"],
+[role="alertdialog"] button[class*="bg-primary"],
+[role="alertdialog"] button[class*="bg-destructive"] {
+  color: white !important;
+}
+
+/* Generelle Regel für farbige Buttons (außerhalb von AlertDialogs) */
+button[class*="bg-blue"],
+button[class*="bg-orange"],
+button[class*="bg-red"],
+button[class*="bg-green"],
+button[class*="bg-primary"],
+button[class*="bg-destructive"],
+button[class*="bg-purple"],
+button[class*="bg-black"] {
+  color: white !important;
+}
+
+/* Admin Appointments: Grüner Bestätigen-Button mit weißer Schrift */
+button.bg-green-600,
+button.bg-green-700,
+button[class*="bg-green"] {
+  color: #ffffff !important;
+}
+
+button.bg-green-600 span,
+button.bg-green-700 span,
+button[class*="bg-green"] span {
+  color: #ffffff !important;
+}
+
+button.bg-green-600 svg,
+button.bg-green-700 svg,
+button[class*="bg-green"] svg {
+  color: #ffffff !important;
+}
+
+/* LINK FIXES - mailto & tel Links */
+a[href^="tel:"],
+a[href^="mailto:"] {
+  text-decoration: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: inline !important;
+  line-height: inherit !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: none !important;
+}
+
+a[href^="tel:"]:hover,
+a[href^="mailto:"]:hover,
+a[href^="tel:"]:focus,
+a[href^="mailto:"]:focus,
+a[href^="tel:"]:visited,
+a[href^="mailto:"]:visited,
+a[href^="tel:"]:active,
+a[href^="mailto:"]:active {
+  text-decoration: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  outline: none !important;
+}
+
+/* Stelle sicher dass die Farben konsistent bleiben */
+a[href^="tel:"].text-blue-600,
+a[href^="mailto:"].text-blue-600 {
+  color: #2563eb !important;
+}
+
+a[href^="tel:"].text-blue-600:hover,
+a[href^="mailto:"].text-blue-600:hover {
+  color: #1d4ed8 !important;
+}
+
+/* SPEZIFISCH für AdminAppointments & alle Card-Komponenten */
+[class*="Card"] a[href^="tel:"],
+[class*="Card"] a[href^="mailto:"],
+.bg-gradient-to-br a[href^="tel:"],
+.bg-gradient-to-br a[href^="mailto:"],
+.space-y-2 a[href^="tel:"],
+.space-y-2 a[href^="mailto:"] {
+  padding: 0 !important;
+  margin: 0 !important;
+  text-decoration: none !important;
+  display: inline !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: none !important;
+}
+
+/* Documentation-specific fixes */
+.prose a[href^="tel:"],
+.prose a[href^="mailto:"] {
+  padding: 0 !important;
+  margin: 0 !important;
+  text-decoration: none !important;
+}

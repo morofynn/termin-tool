@@ -1,0 +1,12 @@
+---
+import MainLayout from '../layouts/main.astro';
+import AdminAppointments from '../components/AdminAppointments';
+import { Toaster } from '../components/ui/sonner';
+---
+
+<MainLayout lightMode={true}>
+<div class="min-h-screen bg-gray-50">
+<AdminAppointments client:only="react" />
+<Toaster client:only="react" />
+</div>
+</MainLayout>
