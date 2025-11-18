@@ -6,6 +6,7 @@
  * Fixed: Multipart Email Encoding (HTML + ICS beide Base64)
  * Fixed: "Invalid Date" Problem - ISO-Datum statt formatierter String
  * Fixed: Termindauer aus Settings verwenden
+ * Fixed: Admin-Email Link führt zum Admin-Panel (dynamisch aus ADMIN_SECRET_PATH)
  */
 
 import { 
@@ -412,6 +413,7 @@ export async function sendCustomerNotification(
 
 /**
  * Sends admin notification
+ * ✅ FIX: Admin-Email Link verwendet dynamischen ADMIN_SECRET_PATH
  */
 export async function sendAdminNotification(
   data: {
@@ -443,7 +445,15 @@ export async function sendAdminNotification(
     console.error('Error loading duration settings:', error);
   }
   
-  const appointment = convertToAppointmentData(data, durationMinutes);
+  // ✅ FIX: Admin-Panel Path dynamisch aus Umgebungsvariable laden
+  const adminSecretPath = env?.ADMIN_SECRET_PATH || import.meta.env.ADMIN_SECRET_PATH || 'secure-admin-panel-xyz789';
+  const baseUrl = data.appointmentUrl.split('/termin/')[0];
+  const adminPanelUrl = `${baseUrl}/${adminSecretPath}`;
+  
+  const appointment = convertToAppointmentData({
+    ...data,
+    appointmentUrl: adminPanelUrl, // ✅ Dynamischer Admin-Panel URL
+  }, durationMinutes);
   
   const html = generateAdminNotificationEmail(appointment, settings, data.action);
   
