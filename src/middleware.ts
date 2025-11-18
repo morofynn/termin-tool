@@ -2,7 +2,7 @@ import type { MiddlewareHandler } from 'astro';
 import { baseUrl } from './lib/base-url';
 
 export const onRequest: MiddlewareHandler = async (ctx, next) => {
-  const { request, cookies, locals } = ctx;
+  const { request, cookies, locals, redirect } = ctx;
   const url = new URL(request.url);
 
   if (import.meta.env.DEV && url.pathname === '/-wf/ready') {
@@ -19,22 +19,18 @@ export const onRequest: MiddlewareHandler = async (ctx, next) => {
   // ============================================================
   // CRON JOB HANDLER - Cloudflare Cron Trigger
   // ============================================================
-  // Wenn Request von Cloudflare Cron kommt, leite zu send-reminders weiter
   const cronHeader = request.headers.get('cf-cron');
   if (cronHeader && url.pathname === `${baseUrl}/api/send-reminders`) {
     console.log('🔔 Cron trigger detected, executing reminder job...');
-    // Weiter zur API-Route
     return next();
   }
 
-  // Verhindere unauthorized access zu send-reminders (außer von Cron oder lokalen Tests)
+  // Verhindere unauthorized access zu send-reminders
   if (url.pathname === `${baseUrl}/api/send-reminders`) {
-    // In Entwicklung erlauben
     if (import.meta.env.DEV) {
       return next();
     }
     
-    // In Produktion: Nur von Cron oder mit Admin-Auth
     const authToken = cookies.get('admin_auth')?.value;
     const adminPassword = locals?.runtime?.env?.ADMIN_PASSWORD || import.meta.env.ADMIN_PASSWORD || 'MeinSicheresPasswort123!';
     
@@ -42,7 +38,6 @@ export const onRequest: MiddlewareHandler = async (ctx, next) => {
       return next();
     }
     
-    // Unauthorized
     return new Response(
       JSON.stringify({ message: 'Unauthorized' }),
       { status: 403, headers: { 'Content-Type': 'application/json' } }
@@ -50,10 +45,15 @@ export const onRequest: MiddlewareHandler = async (ctx, next) => {
   }
 
   // ============================================================
-  // ADMIN BEREICH SCHUTZ
+  // ADMIN BEREICH SCHUTZ - DYNAMISCHER PATH
   // ============================================================
-  const adminSecretPath = locals?.runtime?.env?.ADMIN_SECRET_PATH || import.meta.env.ADMIN_SECRET_PATH || 'secure-admin-panel-xyz789';
-  const adminPassword = locals?.runtime?.env?.ADMIN_PASSWORD || import.meta.env.ADMIN_PASSWORD || 'MeinSicheresPasswort123!';
+  const adminSecretPath = locals?.runtime?.env?.ADMIN_SECRET_PATH || 
+                         import.meta.env.ADMIN_SECRET_PATH || 
+                         'secure-admin-panel-xyz789';
+  const adminPassword = locals?.runtime?.env?.ADMIN_PASSWORD || 
+                       import.meta.env.ADMIN_PASSWORD || 
+                       'MeinSicheresPasswort123!';
+  
   const adminPath = `${baseUrl}/${adminSecretPath}`;
 
   // Prüfe ob Admin-Bereich aufgerufen wird
@@ -62,8 +62,8 @@ export const onRequest: MiddlewareHandler = async (ctx, next) => {
     const authToken = cookies.get('admin_auth')?.value;
     
     if (authToken === adminPassword) {
-      // Authentifiziert - weiter zur Admin-Seite
-      return next();
+      // Authentifiziert - rewrite zu /admin
+      return ctx.rewrite(`${baseUrl}/admin`);
     }
 
     // Nicht authentifiziert - zeige Login-Seite
@@ -206,7 +206,7 @@ export const onRequest: MiddlewareHandler = async (ctx, next) => {
       const errorDiv = document.getElementById('error');
       
       try {
-        const response = await fetch('${adminPath}/auth', {
+        const response = await fetch(window.location.pathname + '/auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ password })
@@ -265,6 +265,14 @@ export const onRequest: MiddlewareHandler = async (ctx, next) => {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
+    }
+  }
+
+  // Blockiere direkten Zugriff auf /admin (nur über rewrite erlaubt)
+  if (url.pathname === `${baseUrl}/admin`) {
+    const authToken = cookies.get('admin_auth')?.value;
+    if (authToken !== adminPassword) {
+      return redirect(`${baseUrl}/${adminSecretPath}`, 302);
     }
   }
 

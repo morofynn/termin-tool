@@ -1,0 +1,21 @@
+---
+/**
+ * Dynamisches Admin-Panel
+ * 
+ * Diese Seite ist über BELIEBIGEN Pfad erreichbar, der in ADMIN_SECRET_PATH definiert ist.
+ * Die Middleware leitet alle Requests zum konfigurierten Admin-Path zu dieser Seite.
+ * 
+ * Authentifizierung: Erfolgt in src/middleware.ts
+ */
+
+import MainLayout from '../layouts/main.astro';
+import AdminAppointments from '../components/AdminAppointments';
+import { Toaster } from '../components/ui/sonner';
+---
+
+<MainLayout lightMode={true}>
+<div class="min-h-screen bg-gray-50">
+<AdminAppointments client:only="react" />
+<Toaster client:only="react" />
+</div>
+</MainLayout>
