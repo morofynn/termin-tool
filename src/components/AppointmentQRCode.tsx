@@ -55,13 +55,13 @@ export default function AppointmentQRCode({ appointmentId, appointmentData, sett
       // Vollständige URL mit Protokoll und Domain
       const fullUrl = `${window.location.origin}${window.location.pathname}?download=true`;
       
-      // Generiere QR-Code auf Canvas - 200x200px
+      // Generiere QR-Code auf Canvas - 200x200px mit weißem QR-Code
       await QRCode.toCanvas(canvasRef.current, fullUrl, {
         width: 200,
         margin: 2,
         color: {
-          dark: '#000000',
-          light: '#FFFFFF',
+          dark: '#FFFFFF',  // Weiß für QR-Code
+          light: '#2563eb', // Blau für Hintergrund (blue-600)
         },
       });
     } catch (error) {
@@ -143,17 +143,17 @@ export default function AppointmentQRCode({ appointmentId, appointmentData, sett
       </CardHeader>
 
       <CardContent className="pb-6 px-6">
-        {/* QR-Code Canvas - transparenter Hintergrund, kein Padding */}
+        {/* QR-Code Canvas - blauer Hintergrund mit abgerundeten Ecken */}
         <div className="flex justify-center mb-6">
           <button
             onClick={handleDownloadICS}
-            className="group relative bg-transparent p-0 rounded-2xl transition-all duration-200 hover:scale-105 cursor-pointer border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="group relative bg-transparent p-0 transition-all duration-200 hover:scale-105 cursor-pointer border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             aria-label="QR-Code scannen oder klicken zum Herunterladen"
           >
-            {/* Canvas QR-Code - 200x200px */}
+            {/* Canvas QR-Code - 200x200px mit abgerundeten Ecken */}
             <canvas
               ref={canvasRef}
-              className="w-[200px] h-[200px]"
+              className="w-[200px] h-[200px] rounded-2xl"
               style={{ 
                 imageRendering: 'pixelated',
               }}
