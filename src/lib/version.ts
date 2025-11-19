@@ -1,15 +1,12 @@
 /**
- * App Version Management
- * 
- * Zentrale Versionsverwaltung für das Terminbuchungs-Tool
- * Ändere hier die Version, um sie überall im Tool zu aktualisieren
+ * Zentrale Versionsverwaltung
+ * Diese Datei enthält die aktuelle Version des Terminbuchungs-Tools
  */
 
-export const APP_VERSION = 'v1.0';
+export const APP_VERSION = 'v1.1';
 
-export const VERSION_INFO = {
-  version: APP_VERSION,
-  releaseDate: '2025-11-19',
-  name: 'Initial Release',
-  description: 'Erste produktionsreife Version des Terminbuchungs-Tools'
-};
+/**
+ * Version History
+ * v1.1 - 19.11.2025 - QR-Code Feature für Kalender-Import
+ * v1.0 - 19.11.2025 - Initial Release
+ */

@@ -15,7 +15,6 @@ import { baseUrl } from '../lib/base-url';
 import { validateFormData, validateEmail, validatePhone, validateName } from '../lib/validation';
 import { type EventDay, getEventDate, getShortLabel, getEventName } from '../lib/event-config';
 import { useEventConfig, getEventDateFromConfig } from '../hooks/use-event-config';
-import { VersionBadge } from './VersionBadge';
 
 type DayKey = EventDay;
 
@@ -781,7 +780,7 @@ export default function AppointmentScheduler() {
             }}>
               <CardContent 
                 style={{ 
-                  padding: 'clamp(1rem, 3vw, 1.5rem)', paddingBottom: '0',
+                  padding: 'clamp(1rem, 3vw, 1.5rem)', paddingBottom: 'clamp(1rem, 3vw, 1.5rem)',
                   paddingTop: 'clamp(1.5rem, 4vw, 2rem)',
                   opacity: showSuccessScreen ? 0 : 1,
                   pointerEvents: showSuccessScreen ? 'none' : 'auto',
@@ -1187,11 +1186,6 @@ export default function AppointmentScheduler() {
                     </Button>
                   </div>
                 </form>
-
-                {/* Version Badge */}
-                <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-                  <VersionBadge className="text-xs text-gray-400" />
-                </div>
               </CardContent>
 
               {/* Success Screen - Verkürzt für Brevity */}

@@ -5,7 +5,7 @@ import { Toaster } from '../components/ui/sonner';
 ---
 
 <MainLayout>
-<div class="min-h-screen bg-transparent">
+<div id="embed-root" class="bg-transparent">
 <AppointmentScheduler client:only="react" />
 <Toaster client:only="react" />
 </div>
@@ -13,27 +13,98 @@ import { Toaster } from '../components/ui/sonner';
 
 <style is:global>
 /* Optimiert für iFrame Einbettung */
-body {
+html, body {
 background: transparent !important;
 margin: 0;
 padding: 0;
+overflow-x: hidden; /* Verhindere horizontales Scrollen */
 }
 
-.min-h-screen {
-min-height: auto !important;
+#embed-root {
 padding: 1rem;
+width: 100%;
+box-sizing: border-box;
+}
+
+/* Scroll-Container nur vertikal */
+body {
+overflow-y: auto;
+overflow-x: hidden;
+-webkit-overflow-scrolling: touch; /* Smooth scrolling auf iOS */
 }
 
 /* Mobile Optimierung für Embed */
 @media (max-width: 768px) {
-.min-h-screen {
+#embed-root {
 padding: 0.5rem;
 }
 }
 
 @media (max-width: 480px) {
-.min-h-screen {
+#embed-root {
 padding: 0.25rem;
 }
 }
 </style>
+
+<script>
+// iFrame Auto-Resize Communication
+// Sendet Höhe an Parent Window
+
+function sendHeight() {
+if (window.parent === window) return; // Nicht im iframe
+  
+const root = document.getElementById('embed-root');
+if (!root) return;
+
+// Berechne tatsächliche Höhe inkl. Margins
+const height = root.scrollHeight;
+
+// Sende Nachricht an Parent
+window.parent.postMessage({
+type: 'termin-tool-resize',
+height: height
+}, '*');
+}
+
+// Initiales Senden nach DOM Load
+if (document.readyState === 'loading') {
+document.addEventListener('DOMContentLoaded', () => {
+setTimeout(sendHeight, 100);
+});
+} else {
+setTimeout(sendHeight, 100);
+}
+
+// Bei Änderungen neu senden
+const resizeObserver = new ResizeObserver(() => {
+sendHeight();
+});
+
+// Observer nach DOM Load starten
+function startObserver() {
+const root = document.getElementById('embed-root');
+if (root) {
+resizeObserver.observe(root);
+}
+}
+
+if (document.readyState === 'loading') {
+document.addEventListener('DOMContentLoaded', startObserver);
+} else {
+startObserver();
+}
+
+// Auch bei Window Resize
+let resizeTimeout: number;
+window.addEventListener('resize', () => {
+clearTimeout(resizeTimeout);
+resizeTimeout = window.setTimeout(sendHeight, 100);
+});
+
+// Bei Scroll-Events (für mobile)
+window.addEventListener('scroll', () => {
+clearTimeout(resizeTimeout);
+resizeTimeout = window.setTimeout(sendHeight, 100);
+}, { passive: true });
+</script>

@@ -22,6 +22,7 @@ import {
   CalendarDays,
   Search,
   FileText,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -56,6 +57,7 @@ import { de } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { getLongLabel } from '../lib/event-config';
 import { VersionBadge } from './VersionBadge';
+import { ChangelogDialog, useChangelogSeen } from './ChangelogDialog';
 
 interface Appointment {
   id: string;
@@ -159,6 +161,9 @@ export default function AdminAppointments() {
   const [calendarConfigured, setCalendarConfigured] = useState(true);
   const [emailConfigured, setEmailConfigured] = useState(true);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
+
+  // Changelog State
+  const { hasSeenChangelog, markAsSeen } = useChangelogSeen();
 
   // NEUE: Lade gesehene Termine aus LocalStorage beim Start
   useEffect(() => {
@@ -466,7 +471,7 @@ export default function AdminAppointments() {
   return (
     <div className="container mx-auto p-2 sm:p-4 md:p-6 lg:p-8 max-w-7xl">
       {/* Header mit Titel, Refresh und Settings */}
-      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+      <div className="mb-4 sm:mb-6 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-50 rounded-lg block">
             <CalendarDays className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
@@ -479,14 +484,14 @@ export default function AdminAppointments() {
           </div>
         </div>
         
-        {/* Mobile: Zeitplan oben, dann andere Buttons in Reihe | Desktop: Alle nebeneinander */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-          {/* Zeitplan Button - volle Breite auf Mobile */}
+        {/* Button Container mit Custom Breakpoint @ 1090px */}
+        <div className="admin-header-buttons flex flex-col items-stretch gap-2 sm:gap-3 w-full">
+          {/* Zeitplan Button */}
           <Button
             onClick={() => setTimetableOpen(true)}
             variant="default"
             size="default"
-            className="gap-2 rounded-xl shadow-md hover:shadow-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold px-4 sm:px-6 text-sm w-full sm:w-auto relative"
+            className="admin-timetable-btn gap-2 rounded-xl shadow-md hover:shadow-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold px-4 sm:px-6 text-sm w-full relative"
           >
             <CalendarDays className="w-4 h-4 sm:w-5 sm:h-5" />
             Zeitplan Ansicht
@@ -500,11 +505,8 @@ export default function AdminAppointments() {
             )}
           </Button>
           
-
-          {/* Andere Buttons - horizontale Reihe auf Mobile */}
-
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
-
+          {/* Andere Buttons - horizontale Reihe */}
+          <div className="flex items-center gap-2 w-full justify-between">
             <Button
               onClick={() => setDocumentationOpen(true)}
               variant="outline"
@@ -513,14 +515,23 @@ export default function AdminAppointments() {
             >
               <FileText className="w-5 h-5" />
             </Button>
-            <Button
-              onClick={() => setAuditLogOpen(true)}
-              variant="outline"
-              size="icon"
-              className="rounded-xl shadow-md hover:shadow-lg text-gray-900 h-10 w-10"
-            >
-              <Clock className="w-5 h-5" />
-            </Button>
+
+            <ChangelogDialog onOpen={markAsSeen} hasSeenChangelog={hasSeenChangelog}>
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-xl shadow-md hover:shadow-lg text-gray-900 h-10 w-10 relative"
+              >
+                <Sparkles className="w-5 h-5" />
+                {!hasSeenChangelog && (
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                  </span>
+                )}
+              </Button>
+            </ChangelogDialog>
+
             <Button
               onClick={() => setSettingsOpen(true)}
               variant="outline"
@@ -535,6 +546,16 @@ export default function AdminAppointments() {
                 </span>
               )}
             </Button>
+
+            <Button
+              onClick={() => setAuditLogOpen(true)}
+              variant="outline"
+              size="icon"
+              className="rounded-xl shadow-md hover:shadow-lg text-gray-900 h-10 w-10"
+            >
+              <Clock className="w-5 h-5" />
+            </Button>
+
             <Button
               onClick={() => fetchAppointments()}
               variant="outline"
@@ -545,7 +566,6 @@ export default function AdminAppointments() {
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             </Button>
           </div>
-
         </div>
       </div>
 

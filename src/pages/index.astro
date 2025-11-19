@@ -43,4 +43,74 @@ if (typeof window !== 'undefined') {
     }, 1000);
   });
 }
+
+// iFrame Auto-Resize: Sende Höhen-Updates an Parent Window
+(function() {
+  // Prüfe ob wir in einem iFrame sind
+  const isInIframe = window.self !== window.top;
+  
+  if (!isInIframe) return;
+
+  function sendHeightToParent() {
+    try {
+      // Berechne die tatsächliche Höhe des Inhalts
+      const body = document.body;
+      const html = document.documentElement;
+      
+      const height = Math.max(
+        body.scrollHeight,
+        body.offsetHeight,
+        html.clientHeight,
+        html.scrollHeight,
+        html.offsetHeight
+      );
+
+      // Sende Message an Parent Window
+      window.parent.postMessage({
+        type: 'resize',
+        height: height
+      }, '*'); // In Produktion: Ersetze '*' mit deiner Domain
+
+    } catch (error) {
+      console.error('Fehler beim Senden der Höhe:', error);
+    }
+  }
+
+  // Initial senden nach Load
+  window.addEventListener('load', () => {
+    setTimeout(sendHeightToParent, 100);
+    setTimeout(sendHeightToParent, 500);
+    setTimeout(sendHeightToParent, 1000);
+  });
+
+  // Bei DOM-Änderungen
+  if (typeof MutationObserver !== 'undefined') {
+    const observer = new MutationObserver(() => {
+      sendHeightToParent();
+    });
+    
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true
+    });
+  }
+
+  // Bei Resize
+  if (typeof ResizeObserver !== 'undefined') {
+    const resizeObserver = new ResizeObserver(() => {
+      sendHeightToParent();
+    });
+    resizeObserver.observe(document.body);
+  }
+
+  // Fallback: Interval-basiert (alle 500ms)
+  setInterval(sendHeightToParent, 500);
+
+  // Bei Window Resize
+  window.addEventListener('resize', sendHeightToParent);
+
+  console.log('iFrame Auto-Resize aktiviert');
+})();
 </script>

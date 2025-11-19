@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Termin-Tool Integration Beispiel</title>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f9fafb;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      color: #111827;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      color: #6b7280;
+      font-size: 1rem;
+    }
+
+    /* iFrame Container */
+    .iframe-container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      margin-bottom: 40px;
+    }
+
+    /* iFrame Styling */
+    #termin-tool-iframe {
+      width: 100%;
+      border: none;
+      overflow: hidden;
+      display: block;
+      min-height: 600px;
+      transition: height 0.3s ease;
+    }
+
+    /* Loading Animation */
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      opacity: 1;
+      transition: opacity 0.3s ease;
+    }
+
+    .loading-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #e5e7eb;
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+
+      .header h1 {
+        font-size: 1.5rem;
+      }
+
+      .iframe-container {
+        border-radius: 12px;
+      }
+
+      #termin-tool-iframe {
+        min-height: 500px;
+      }
+    }
+
+    /* Info Box */
+    .info-box {
+      background: #dbeafe;
+      border: 2px solid #3b82f6;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 30px;
+    }
+
+    .info-box h3 {
+      color: #1e40af;
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+    }
+
+    .info-box p {
+      color: #1e3a8a;
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+
+    .info-box code {
+      background: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>🗓️ Termin-Tool Integration</h1>
+      <p>Responsive iFrame ohne Scroll - Automatische Höhenanpassung</p>
+    </div>
+
+    <!-- Info Box -->
+    <div class="info-box">
+      <h3>📋 Integration in 3 Schritten:</h3>
+      <p>1. Kopiere den iFrame-Code in deine Website</p>
+      <p>2. Füge das <code>iframe-resizer.js</code> Script ein</p>
+      <p>3. Ersetze die URL mit deiner Tool-Domain</p>
+    </div>
+
+    <!-- iFrame Container -->
+    <div class="iframe-container">
+      <div style="position: relative;">
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loading-overlay">
+          <div class="spinner"></div>
+        </div>
+
+        <!-- Termin-Tool iFrame -->
+        <iframe 
+          id="termin-tool-iframe"
+          src="https://deine-domain.com/termin-tool"
+          scrolling="no"
+          frameborder="0"
+          allowfullscreen
+          loading="lazy"
+          title="Termin-Tool"
+        ></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- iFrame Resizer Script -->
+  <script>
+    /**
+     * Termin-Tool iFrame Auto-Resizer
+     * Passt die Höhe automatisch an den Inhalt an
+     */
+    (function() {
+      'use strict';
+
+      const CONFIG = {
+        iframeId: 'termin-tool-iframe',
+        loadingOverlayId: 'loading-overlay',
+        minHeight: 400,
+        maxHeight: 3000,
+        debounceDelay: 100
+      };
+
+      let debounceTimer = null;
+
+      const iframe = document.getElementById(CONFIG.iframeId);
+      const loadingOverlay = document.getElementById(CONFIG.loadingOverlayId);
+      
+      if (!iframe) {
+        console.error('Termin-Tool iFrame nicht gefunden');
+        return;
+      }
+
+      /**
+       * Aktualisiere iFrame Höhe
+       */
+      function updateHeight(height) {
+        if (typeof height !== 'number' || isNaN(height)) return;
+
+        const boundedHeight = Math.max(
+          CONFIG.minHeight,
+          Math.min(CONFIG.maxHeight, height)
+        );
+
+        iframe.style.height = boundedHeight + 'px';
+        
+        console.log('📏 iFrame Höhe aktualisiert:', boundedHeight + 'px');
+      }
+
+      /**
+       * Message Handler
+       */
+      function handleMessage(event) {
+        // Optional: Origin-Check für Produktion
+        // if (event.origin !== 'https://deine-domain.com') return;
+
+        if (!event.data || typeof event.data !== 'object') return;
+
+        if (event.data.type === 'resize' && event.data.height) {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            updateHeight(event.data.height);
+          }, CONFIG.debounceDelay);
+        }
+      }
+
+      // Event Listeners
+      window.addEventListener('message', handleMessage, false);
+
+      iframe.addEventListener('load', function() {
+        console.log('✅ Termin-Tool geladen');
+        
+        // Verstecke Loading Overlay
+        if (loadingOverlay) {
+          setTimeout(() => {
+            loadingOverlay.classList.add('hidden');
+          }, 500);
+        }
+      });
+
+      // Cleanup
+      window.addEventListener('beforeunload', function() {
+        window.removeEventListener('message', handleMessage);
+      });
+
+      console.log('🚀 Termin-Tool iFrame Resizer initialisiert');
+    })();
+  </script>
+
+  <!-- Alternative: Externes Script laden -->
+  <!-- <script src="https://deine-domain.com/iframe-resizer.js"></script> -->
+</body>
+</html>

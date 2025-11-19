@@ -535,46 +535,46 @@ Garantiert 2:1 Pillenform auf allen Geräten & Bildschirmgrößen
 /* Root Element - Basis Dimensionen */
 button[data-slot="switch"],
 button[role="switch"] {
-  /* Exakte Größe erzwingen */
-  height: 24px !important;
-  width: 44px !important;
-  min-width: 44px !important;
-  max-width: 44px !important;
-  min-height: 24px !important;
-  max-height: 24px !important;
-  
-  /* Layout & Verhalten */
-  padding: 0 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
-  flex-shrink: 0 !important;
-  flex-grow: 0 !important;
-  box-sizing: border-box !important;
-  
-  /* Verhindere Text-Wrapping */
-  white-space: nowrap !important;
+/* Exakte Größe erzwingen */
+height: 24px !important;
+width: 44px !important;
+min-width: 44px !important;
+max-width: 44px !important;
+min-height: 24px !important;
+max-height: 24px !important;
+
+/* Layout & Verhalten */
+padding: 0 !important;
+display: inline-flex !important;
+align-items: center !important;
+justify-content: flex-start !important;
+flex-shrink: 0 !important;
+flex-grow: 0 !important;
+box-sizing: border-box !important;
+
+/* Verhindere Text-Wrapping */
+white-space: nowrap !important;
 }
 
 /* Thumb Element - exakt 20x20px */
 span[data-slot="switch-thumb"] {
-  height: 20px !important;
-  width: 20px !important;
-  min-height: 20px !important;
-  max-height: 20px !important;
-  min-width: 20px !important;
-  max-width: 20px !important;
-  margin: 0 !important;
-  flex-shrink: 0 !important;
-  flex-grow: 0 !important;
-  box-sizing: border-box !important;
+height: 20px !important;
+width: 20px !important;
+min-height: 20px !important;
+max-height: 20px !important;
+min-width: 20px !important;
+max-width: 20px !important;
+margin: 0 !important;
+flex-shrink: 0 !important;
+flex-grow: 0 !important;
+box-sizing: border-box !important;
 }
 
 /* Container Fix - verhindere dass Parent-Elemente Switch verzerren */
 div:has(> button[data-slot="switch"]) {
-  width: fit-content !important;
-  min-width: 44px !important;
-  flex-shrink: 0 !important;
+width: fit-content !important;
+min-width: 44px !important;
+flex-shrink: 0 !important;
 }
 
 /* Flexbox Context Fix */
@@ -582,73 +582,195 @@ div:has(> button[data-slot="switch"]) {
 .inline-flex > button[data-slot="switch"],
 [class*="flex"] button[data-slot="switch"],
 [class*="grid"] button[data-slot="switch"] {
-  flex-shrink: 0 !important;
-  flex-grow: 0 !important;
-  flex-basis: auto !important;
+flex-shrink: 0 !important;
+flex-grow: 0 !important;
+flex-basis: auto !important;
 }
 
 /* Mobile-spezifische Fixes */
 @media (max-width: 640px) {
-  button[data-slot="switch"],
-  button[role="switch"] {
-    height: 24px !important;
-    width: 44px !important;
-    min-width: 44px !important;
-    max-width: 44px !important;
-  }
-  
-  span[data-slot="switch-thumb"] {
-    height: 20px !important;
-    width: 20px !important;
-    min-height: 20px !important;
-    max-height: 20px !important;
-    min-width: 20px !important;
-    max-width: 20px !important;
-  }
+button[data-slot="switch"],
+button[role="switch"] {
+height: 24px !important;
+width: 44px !important;
+min-width: 44px !important;
+max-width: 44px !important;
+}
+
+span[data-slot="switch-thumb"] {
+height: 20px !important;
+width: 20px !important;
+min-height: 20px !important;
+max-height: 20px !important;
+min-width: 20px !important;
+max-width: 20px !important;
+}
 }
 
 /* Extra kleine Displays (iPhone SE, etc.) */
 @media (max-width: 374px) {
-  button[data-slot="switch"],
-  button[role="switch"] {
-    height: 22px !important;
-    width: 40px !important;
-    min-width: 40px !important;
-    max-width: 40px !important;
-    min-height: 22px !important;
-    max-height: 22px !important;
-  }
-  
-  span[data-slot="switch-thumb"] {
-    height: 18px !important;
-    width: 18px !important;
-    min-height: 18px !important;
-    max-height: 18px !important;
-    min-width: 18px !important;
-    max-width: 18px !important;
-  }
-  
-  /* Thumb Translation anpassen für kleinere Switch */
-  span[data-slot="switch-thumb"][data-state="checked"] {
-    transform: translateX(18px) !important;
-  }
+button[data-slot="switch"],
+button[role="switch"] {
+height: 22px !important;
+width: 40px !important;
+min-width: 40px !important;
+max-width: 40px !important;
+min-height: 22px !important;
+max-height: 22px !important;
+}
+
+span[data-slot="switch-thumb"] {
+height: 18px !important;
+width: 18px !important;
+min-height: 18px !important;
+max-height: 18px !important;
+min-width: 18px !important;
+max-width: 18px !important;
+}
+
+/* Thumb Translation anpassen für kleinere Switch */
+span[data-slot="switch-thumb"][data-state="checked"] {
+transform: translateX(18px) !important;
+}
 }
 
 /* Touch-optimierte Mindestgröße für Tap Targets */
 @media (pointer: coarse) {
-  button[data-slot="switch"],
-  button[role="switch"] {
-    /* Mindestens 44x44px Tap Target (iOS HIG) aber Switch bleibt 44x24 */
-    position: relative;
-  }
-  
-  button[data-slot="switch"]::before {
-    content: '';
-    position: absolute;
-    top: -10px;
-    left: 0;
-    right: 0;
-    bottom: -10px;
-    /* Erweitert den Touch-Bereich ohne visuell größer zu sein */
-  }
+button[data-slot="switch"],
+button[role="switch"] {
+/* Mindestens 44x44px Tap Target (iOS HIG) aber Switch bleibt 44x24 */
+position: relative;
 }
+
+button[data-slot="switch"]::before {
+content: '';
+position: absolute;
+top: -10px;
+left: 0;
+right: 0;
+bottom: -10px;
+/* Erweitert den Touch-Bereich ohne visuell größer zu sein */
+}
+}
+
+
+/* ===========================================
+CHECKBOX COMPONENT - SIZE FIX
+Verhindere dass Checkbox auf Mobile zu groß wird
+=========================================== */
+
+/* Basis Checkbox Größe - konsistent auf allen Geräten */
+button[role="checkbox"],
+button[data-slot="checkbox"] {
+height: 20px !important;
+width: 20px !important;
+min-height: 20px !important;
+max-height: 20px !important;
+min-width: 20px !important;
+max-width: 20px !important;
+flex-shrink: 0 !important;
+flex-grow: 0 !important;
+padding: 0 !important;
+}
+
+/* Icon innerhalb der Checkbox */
+button[role="checkbox"] svg,
+button[data-slot="checkbox"] svg {
+width: 14px !important;
+height: 14px !important;
+}
+
+/* Container Fix - verhindere dass Parent-Elemente Checkbox verzerren */
+div:has(> button[role="checkbox"]),
+div:has(> button[data-slot="checkbox"]) {
+width: fit-content !important;
+flex-shrink: 0 !important;
+}
+
+/* Mobile Fixes */
+@media (max-width: 640px) {
+button[role="checkbox"],
+button[data-slot="checkbox"] {
+height: 18px !important;
+width: 18px !important;
+min-height: 18px !important;
+max-height: 18px !important;
+min-width: 18px !important;
+max-width: 18px !important;
+}
+
+button[role="checkbox"] svg,
+button[data-slot="checkbox"] svg {
+width: 12px !important;
+height: 12px !important;
+}
+}
+
+/* Extra kleine Displays */
+@media (max-width: 374px) {
+button[role="checkbox"],
+button[data-slot="checkbox"] {
+height: 16px !important;
+width: 16px !important;
+min-height: 16px !important;
+max-height: 16px !important;
+min-width: 16px !important;
+max-width: 16px !important;
+}
+
+button[role="checkbox"] svg,
+button[data-slot="checkbox"] svg {
+width: 11px !important;
+height: 11px !important;
+}
+}
+
+
+/* ===========================================
+ADMIN PANEL - RESPONSIVE BREAKPOINT @ 1090px
+Buttons wechseln früher in Mobile-Layout
+=========================================== */
+
+/* Mobile Layout: Bis 1090px */
+@media (max-width: 1090px) {
+/* Header Container - Stack Layout */
+.admin-header-buttons {
+flex-direction: column !important;
+width: 100% !important;
+}
+  
+/* Zeitplan Button - volle Breite */
+.admin-header-buttons > button:first-child,
+.admin-header-buttons > .admin-timetable-btn {
+width: 100% !important;
+}
+  
+/* Andere Buttons - horizontale Reihe */
+.admin-header-buttons > div:last-child {
+width: 100% !important;
+justify-content: space-between !important;
+}
+}
+
+/* Desktop Layout: Ab 1090px */
+@media (min-width: 1091px) {
+/* Header Container - Horizontal Layout */
+.admin-header-buttons {
+flex-direction: row !important;
+align-items: center !important;
+width: auto !important;
+}
+  
+/* Zeitplan Button - auto width */
+.admin-header-buttons > button:first-child,
+.admin-header-buttons > .admin-timetable-btn {
+width: auto !important;
+}
+  
+/* Andere Buttons - auto justify */
+.admin-header-buttons > div:last-child {
+width: auto !important;
+justify-content: flex-start !important;
+}
+}
+

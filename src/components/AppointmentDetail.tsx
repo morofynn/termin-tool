@@ -34,6 +34,7 @@ import {
 } from './ui/alert-dialog';
 import { toast } from 'sonner';
 import { baseUrl } from '../lib/base-url';
+import AppointmentQRCode from './AppointmentQRCode';
 
 interface Appointment {
   id: string;
@@ -274,24 +275,32 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
 
   const titleLines = getTitleLines();
 
+  // Helper: Calculate end time (30 minutes after start)
+  const getEndTime = (startTime: string): string => {
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const endDate = new Date();
+    endDate.setHours(hours, minutes + 30, 0, 0);
+    return `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
+  };
+
   return (
-    <div className="min-h-screen p-3 sm:p-6 md:p-8" style={{ background: 'transparent' }}>
+    <div className="min-h-screen p-4 md:p-8" style={{ background: 'transparent' }}>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-3xl mx-auto space-y-4 sm:space-y-6"
+        className="max-w-3xl mx-auto space-y-6"
       >
         {/* Termin Details Card */}
         <Card className="shadow-2xl border-0 overflow-hidden bg-white" style={{ borderRadius: '1.5rem' }}>
-          <CardHeader className="pb-4 sm:pb-6 pt-6 sm:pt-8 px-4 sm:px-6 md:px-8 bg-gradient-to-br from-blue-600 to-blue-700" style={{ borderRadius: '1.5rem 1.5rem 0 0' }}>
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <CardHeader className="pb-6 pt-8 px-6 bg-gradient-to-br from-blue-600 to-blue-700" style={{ borderRadius: '1.5rem 1.5rem 0 0' }}>
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div className="flex-1">
                 <CardTitle className="text-white leading-tight">
-                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1">
+                  <div className="text-3xl md:text-4xl font-bold mb-1">
                     {titleLines.mainLine}
                   </div>
-                  <div className="text-lg sm:text-xl md:text-2xl font-normal opacity-90">
+                  <div className="text-xl md:text-2xl font-normal opacity-90">
                     {titleLines.subLine}
                   </div>
                 </CardTitle>
@@ -307,25 +316,25 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
             </div>
           </CardHeader>
 
-          <CardContent className="p-4 sm:p-6 md:p-8">
+          <CardContent className="p-6">
             {/* Pending Disclaimer */}
             {appointment.status === 'pending' && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 rounded-2xl p-4 sm:p-5 mb-4 sm:mb-6 shadow-sm"
+                className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 rounded-2xl p-5 mb-6 shadow-sm"
               >
-                <div className="flex gap-3 sm:gap-4">
+                <div className="flex gap-4">
                   <div className="flex-shrink-0">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-200 rounded-full flex items-center justify-center">
-                      <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-700" />
+                    <div className="w-12 h-12 bg-yellow-200 rounded-full flex items-center justify-center">
+                      <Clock className="w-6 h-6 text-yellow-700" />
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-sm sm:text-base font-bold text-yellow-900 mb-1 sm:mb-2">
+                    <h3 className="text-base font-bold text-yellow-900 mb-2">
                       Termin noch nicht bestätigt
                     </h3>
-                    <p className="text-xs sm:text-sm text-yellow-800 leading-relaxed">
+                    <p className="text-sm text-yellow-800 leading-relaxed">
                       Ihre Terminanfrage wird geprüft und Sie erhalten in Kürze eine Bestätigung per E-Mail. 
                       Der Termin ist erst nach der Bestätigung verbindlich.
                     </p>
@@ -339,9 +348,9 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-red-50 border border-red-200 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6"
+                className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6"
               >
-                <div className="flex gap-2 sm:gap-3">
+                <div className="flex gap-3">
                   <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <h3 className="text-sm font-semibold text-red-900 mb-1">Termin storniert</h3>
@@ -358,9 +367,9 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-green-50 border border-green-200 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6"
+                className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6"
               >
-                <div className="flex gap-2 sm:gap-3">
+                <div className="flex gap-3">
                   <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <h3 className="text-sm font-semibold text-green-900 mb-1">Stornierung erfolgreich</h3>
@@ -373,8 +382,8 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
             )}
 
             {/* Termin-Details Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
-              <div className="flex items-center gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
                 <div className="p-2 bg-blue-50 rounded-lg flex-shrink-0">
                   <Calendar className="w-5 h-5 text-blue-600" />
                 </div>
@@ -387,7 +396,7 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl">
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
                 <div className="p-2 bg-blue-50 rounded-lg flex-shrink-0">
                   <Clock className="w-5 h-5 text-blue-600" />
                 </div>
@@ -398,7 +407,7 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl">
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
                 <div className="p-2 bg-blue-50 rounded-lg flex-shrink-0">
                   <MapPin className="w-5 h-5 text-blue-600" />
                 </div>
@@ -410,16 +419,16 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
               </div>
             </div>
 
-            <Separator className="my-4 sm:my-6" />
+            <Separator className="my-6" />
 
             {/* Kundendaten */}
-            <div className="space-y-4 mb-4 sm:mb-6">
+            <div className="space-y-4 mb-6">
               <div>
                 <h3 className="text-sm font-semibold text-gray-700 mb-3">
                   Ihre Kontaktdaten
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div className="flex items-start gap-2 sm:gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                     <div className="p-2 bg-white rounded-lg shadow-sm flex-shrink-0">
                       <Calendar className="w-4 h-4 text-gray-600" />
                     </div>
@@ -430,7 +439,7 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
                   </div>
 
                   {appointment.company && (
-                    <div className="flex items-start gap-2 sm:gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                       <div className="p-2 bg-white rounded-lg shadow-sm flex-shrink-0">
                         <Building2 className="w-4 h-4 text-gray-600" />
                       </div>
@@ -441,7 +450,7 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
                     </div>
                   )}
 
-                  <div className="flex items-start gap-2 sm:gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                     <div className="p-2 bg-white rounded-lg shadow-sm flex-shrink-0">
                       <Phone className="w-4 h-4 text-gray-600" />
                     </div>
@@ -456,7 +465,7 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-2 sm:gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                     <div className="p-2 bg-white rounded-lg shadow-sm flex-shrink-0">
                       <Mail className="w-4 h-4 text-gray-600" />
                     </div>
@@ -476,7 +485,7 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
               {appointment.message && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2">Ihre Nachricht</h3>
-                  <div className="p-3 sm:p-4 bg-gray-50 rounded-lg">
+                  <div className="p-4 bg-gray-50 rounded-lg">
                     <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{appointment.message}</p>
                   </div>
                 </div>
@@ -485,9 +494,9 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
 
             {/* Stornierungsbutton */}
             {appointment.status !== 'cancelled' && (
-              <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 sm:p-4">
-                <div className="flex flex-col gap-3 sm:gap-4">
-                  <div className="flex items-start gap-2 sm:gap-3">
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
                       <h3 className="text-sm font-semibold text-orange-900 mb-1">
@@ -511,7 +520,7 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
               </div>
             )}
 
-            <Separator className="my-4 sm:my-6" />
+            <Separator className="my-6" />
 
             {/* Zusatzinfo */}
             <div className="text-center text-xs text-gray-500">
@@ -528,14 +537,32 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
           </CardContent>
         </Card>
 
+        {/* QR Code Card - Nur bei bestätigten Terminen */}
+        {appointment.status === 'confirmed' && (
+          <AppointmentQRCode
+            appointmentId={appointment.id}
+            appointmentData={{
+              name: appointment.name,
+              company: appointment.company,
+              email: appointment.email,
+              phone: appointment.phone,
+              date: appointment.appointmentDate,
+              startTime: appointment.time,
+              endTime: getEndTime(appointment.time),
+              message: appointment.message,
+            }}
+            settings={settings}
+          />
+        )}
+
         {/* Kontaktkarte - mit dynamischen Firmendaten */}
         <Card className="shadow-2xl rounded-2xl border-0 overflow-hidden bg-white">
-          <CardContent className="p-4 sm:p-6">
-            <div className="mb-4 sm:mb-6 flex items-center justify-center">
+          <CardContent className="p-6">
+            <div className="mb-6 flex items-center justify-center">
               <img 
                 src={settings.logoUrl} 
                 alt={`${settings.companyName} Logo`} 
-                className="h-12 sm:h-16 w-auto"
+                className="h-16 w-auto"
                 onError={(e) => {
                   // Fallback wenn Logo nicht geladen werden kann
                   (e.target as HTMLImageElement).style.display = 'none';
@@ -543,10 +570,10 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
               />
             </div>
 
-            <Separator className="mb-4 sm:mb-6" />
+            <Separator className="mb-6" />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div className="flex items-start gap-2 sm:gap-3 p-3 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                 <div className="p-2 bg-white rounded-lg shadow-sm flex-shrink-0">
                   <MapPin className="w-4 h-4 text-gray-600" />
                 </div>
@@ -559,7 +586,7 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 sm:gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                 <div className="p-2 bg-white rounded-lg shadow-sm flex-shrink-0">
                   <Phone className="w-4 h-4 text-gray-600" />
                 </div>
@@ -574,7 +601,7 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 sm:gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                 <div className="p-2 bg-white rounded-lg shadow-sm flex-shrink-0">
                   <Mail className="w-4 h-4 text-gray-600" />
                 </div>
@@ -589,7 +616,7 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 sm:gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                 <div className="p-2 bg-white rounded-lg shadow-sm flex-shrink-0">
                   <Globe className="w-4 h-4 text-gray-600" />
                 </div>
@@ -607,7 +634,7 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
               </div>
             </div>
 
-            <div className="mt-4 sm:mt-6 text-center">
+            <div className="mt-6 text-center">
               <p className="text-xs text-gray-500">
                 Wir freuen uns auf Ihren Besuch! Bei Fragen stehen wir Ihnen gerne zur Verfügung.
               </p>
@@ -624,7 +651,7 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
               <div className="p-3 bg-orange-50 rounded-xl">
                 <AlertCircle className="w-6 h-6 text-orange-600" />
               </div>
-              <AlertDialogTitle className="text-lg sm:text-xl text-gray-900">Termin wirklich stornieren?</AlertDialogTitle>
+              <AlertDialogTitle className="text-xl text-gray-900">Termin wirklich stornieren?</AlertDialogTitle>
             </div>
             <AlertDialogDescription className="text-sm text-gray-600 leading-relaxed">
               Möchten Sie Ihren Termin am {DAY_NAMES_FULL[appointment.day]} um {appointment.time} Uhr
@@ -664,7 +691,7 @@ export default function AppointmentDetail({ appointmentId }: { appointmentId: st
               <div className="p-3 bg-red-50 rounded-xl">
                 <XCircle className="w-6 h-6 text-red-600" />
               </div>
-              <AlertDialogTitle className="text-lg sm:text-xl text-gray-900">Termin nicht gefunden</AlertDialogTitle>
+              <AlertDialogTitle className="text-xl text-gray-900">Termin nicht gefunden</AlertDialogTitle>
             </div>
             <AlertDialogDescription className="text-sm text-gray-600 leading-relaxed">
               {error || 'Der angeforderte Termin existiert nicht oder wurde gelöscht.'}

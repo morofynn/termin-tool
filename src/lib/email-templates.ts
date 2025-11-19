@@ -41,7 +41,7 @@ export interface AppointmentData {
 
 /**
  * Generiert ICS Calendar Datei für Appointment
- * ✅ FIX: Nur noch EIN Link zur Terminseite (in der Description)
+ * ✅ FIX: Absätze nach "Kontakt:" + Link zur Terminansicht
  */
 export function generateICS(appointment: AppointmentData, settings: EmailSettings): string {
   const calendar = ical({ name: `Termin ${settings.companyName}` });
@@ -57,18 +57,18 @@ export function generateICS(appointment: AppointmentData, settings: EmailSetting
   const endDateTime = new Date(appointmentDate);
   endDateTime.setHours(endHour, endMin, 0, 0);
   
-  // Kunden-ICS: Zeige FIRMENDATEN prominent
+  // Kunden-ICS: Zeige FIRMENDATEN prominent mit Absätzen
   const description = [
     `Termin mit ${settings.companyName}`,
     settings.eventName ? `\nVeranstaltung: ${settings.eventName}` : '',
     settings.standInfo ? `\nStand/Ort: ${settings.standInfo}` : '',
     `\n${settings.companyAddress}`,
     `\n\nKontakt:`,
-    `Telefon: ${settings.companyPhone}`,
-    `E-Mail: ${settings.companyEmail}`,
-    settings.companyWebsite ? `Website: ${settings.companyWebsite}` : '',
+    `\nTelefon: ${settings.companyPhone}`,
+    `\nE-Mail: ${settings.companyEmail}`,
+    settings.companyWebsite ? `\nWebsite: ${settings.companyWebsite}` : '',
     appointment.message ? `\n\nIhre Nachricht:\n${appointment.message}` : '',
-    `\n\nTermin verwalten: ${appointment.appointmentUrl}`,
+    `\n\nTermin verwalten:\n${appointment.appointmentUrl}`,
   ].filter(Boolean).join('');
   
   // Create Event
@@ -82,7 +82,6 @@ export function generateICS(appointment: AppointmentData, settings: EmailSetting
     location: settings.standInfo 
       ? `${settings.standInfo}${settings.eventName ? ` (${settings.eventName})` : ''}`
       : settings.companyAddress,
-    // url: Nicht mehr verwendet - war doppelt
     organizer: {
       name: settings.companyName,
       email: settings.companyEmail,
