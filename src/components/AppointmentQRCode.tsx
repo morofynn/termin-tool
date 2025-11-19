@@ -55,13 +55,13 @@ export default function AppointmentQRCode({ appointmentId, appointmentData, sett
       // Vollständige URL mit Protokoll und Domain
       const fullUrl = `${window.location.origin}${window.location.pathname}?download=true`;
       
-      // Generiere QR-Code auf Canvas mit weißem Muster auf transparentem Hintergrund
+      // Generiere QR-Code auf Canvas - 200x200px
       await QRCode.toCanvas(canvasRef.current, fullUrl, {
-        width: 512,
+        width: 200,
         margin: 2,
         color: {
-          dark: '#FFFFFF',    // Weiß für das Muster
-          light: '#00000000', // Transparent für den Hintergrund (Blau scheint durch)
+          dark: '#000000',
+          light: '#FFFFFF',
         },
       });
     } catch (error) {
@@ -101,7 +101,6 @@ export default function AppointmentQRCode({ appointmentId, appointmentData, sett
           (settings.companyWebsite ? `\nWeb: ${settings.companyWebsite}` : '') +
           `\n\nTermindetails: ${appointmentUrl}`,
         location,
-        // URL-Zeile entfernt - war doppelt mit description
         organizer: {
           name: settings.companyName,
           email: settings.companyEmail,
@@ -144,32 +143,25 @@ export default function AppointmentQRCode({ appointmentId, appointmentData, sett
       </CardHeader>
 
       <CardContent className="pb-6 px-6">
-        {/* QR-Code Canvas - weißes Muster auf transparentem Hintergrund */}
+        {/* QR-Code Canvas - transparenter Hintergrund, kein Padding */}
         <div className="flex justify-center mb-6">
           <button
             onClick={handleDownloadICS}
-            className="group relative p-6 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl cursor-pointer border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="group relative bg-transparent p-0 rounded-2xl transition-all duration-200 hover:scale-105 cursor-pointer border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             aria-label="QR-Code scannen oder klicken zum Herunterladen"
           >
-            {/* Canvas QR-Code */}
-            <div className="bg-white p-4 rounded-xl">
-              <canvas
-                ref={canvasRef}
-                className="w-40 h-40"
-                style={{ 
-                  imageRendering: 'pixelated',
-                  maxWidth: '100%',
-                  height: 'auto'
-                }}
-              />
-            </div>
+            {/* Canvas QR-Code - 200x200px */}
+            <canvas
+              ref={canvasRef}
+              className="w-[200px] h-[200px]"
+              style={{ 
+                imageRendering: 'pixelated',
+              }}
+            />
             
-            {/* Download Icon Overlay */}
+            {/* Download Icon Overlay - nur Icon, kein Text */}
             <div className="absolute inset-0 bg-blue-700/95 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-              <div className="text-center">
-                <Download className="w-12 h-12 text-white mx-auto mb-2" />
-                <p className="text-sm text-white font-semibold">Kalender herunterladen</p>
-              </div>
+              <Download className="w-12 h-12 text-white" />
             </div>
           </button>
         </div>
