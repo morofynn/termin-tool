@@ -1,0 +1,18 @@
+{
+    "cloud": {
+        "framework": "astro",
+        "project_id": "03f8ac7b-f911-4720-bd76-6093de507960"
+    },
+    "devlink": {
+        "rootDir": "./src/site-components",
+        "cssModules": true,
+        "fileExtensions": {
+            "js": "jsx"
+        }
+    },
+    "telemetry": {
+        "global": {
+            "allowTelemetry": true
+        }
+    }
+}

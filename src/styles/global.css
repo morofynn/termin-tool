@@ -1,0 +1,654 @@
+@import "tailwindcss";
+@import "../../generated/webflow.css";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+--color-background: var(--background);
+--color-foreground: var(--foreground);
+--font-sans: var(--font-geist-sans);
+--font-mono: var(--font-geist-mono);
+--color-sidebar-ring: var(--sidebar-ring);
+--color-sidebar-border: var(--sidebar-border);
+--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+--color-sidebar-accent: var(--sidebar-accent);
+--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+--color-sidebar-primary: var(--sidebar-primary);
+--color-sidebar-foreground: var(--sidebar-foreground);
+--color-sidebar: var(--sidebar);
+--color-chart-5: var(--chart-5);
+--color-chart-4: var(--chart-4);
+--color-chart-3: var(--chart-3);
+--color-chart-2: var(--chart-2);
+--color-chart-1: var(--chart-1);
+--color-ring: var(--ring);
+--color-input: var(--input);
+--color-border: var(--border);
+--color-destructive: var(--destructive);
+--color-accent-foreground: var(--accent-foreground);
+--color-accent: var(--accent);
+--color-muted-foreground: var(--muted-foreground);
+--color-muted: var(--muted);
+--color-secondary-foreground: var(--secondary-foreground);
+--color-secondary: var(--secondary);
+--color-primary-foreground: var(--primary-foreground);
+--color-primary: var(--primary);
+--color-popover-foreground: var(--popover-foreground);
+--color-popover: var(--popover);
+--card-foreground: var(--card-foreground);
+--color-card: var(--card);
+--radius-sm: calc(var(--radius) - 4px);
+--radius-md: calc(var(--radius) - 2px);
+--radius-lg: var(--radius);
+--radius-xl: calc(var(--radius) + 4px);
+--body-font: var(--body-font);
+--heading-font: var(--heading-font);
+--button-font: var(--button-font);
+}
+
+:root {
+--body-font: var(--_apps---typography--body-font);
+--heading-font: var(--_apps---typography--heading-font);
+--button-font: var(--_apps---typography--button-font);
+--radius: var(--_apps---sizes--radius);
+--background: var(--_apps---colors--background);
+--foreground: var(--_apps---colors--foreground);
+--card: var(--_apps---colors--card);
+--card-foreground: var(--_apps---colors--card-foreground);
+--popover: var(--_apps---colors--popover);
+--popover-foreground: var(--_apps---colors--popover-foreground);
+--primary: var(--_apps---colors--primary);
+--primary-foreground: var(--_apps---colors--primary-foreground);
+--secondary: var(--_apps---colors--secondary);
+--secondary-foreground: var(--_apps---colors--secondary-foreground);
+--muted: var(--_apps---colors--muted);
+--muted-foreground: var(--_apps---colors--muted-foreground);
+--accent: var(--_apps---colors--accent);
+--accent-foreground: var(--_apps---colors--accent-foreground);
+--destructive: var(--_apps---colors--destructive);
+--border: var(--_apps---colors--border);
+--input: var(--_apps---colors--input);
+--ring: var(--_apps---colors--ring);
+--chart-1: var(--_apps---charts--chart-1);
+--chart-2: var(--_apps---charts--chart-2);
+--chart-3: var(--_apps---charts--chart-3);
+--chart-4: var(--_apps---charts--chart-4);
+--chart-5: var(--_apps---charts--chart-5);
+--sidebar: var(--_apps---sidebar--sidebar);
+--sidebar-foreground: var(--_apps---sidebar--sidebar-foreground);
+--sidebar-primary: var(--_apps---sidebar--sidebar-primary);
+--sidebar-primary-foreground: var(
+--_apps---sidebar--sidebar-primary-foreground
+);
+--sidebar-accent: var(--_apps---sidebar--sidebar-accent);
+--sidebar-accent-foreground: var(
+--_apps---sidebar--sidebar-accent-foreground
+);
+--sidebar-border: var(--_apps---sidebar--sidebar-border);
+--sidebar-ring: var(--_apps---sidebar--sidebar-ring);
+}
+
+.dark {
+--body-font: var(--_apps---typography--body-font);
+--heading-font: var(--_apps---typography--heading-font);
+--button-font: var(--_apps---typography--button-font);
+--radius: var(--_apps---sizes--radius);
+--background: var(--_apps---colors--background-dark);
+--foreground: var(--_apps---colors--foreground-dark);
+--card: var(--_apps---colors--card-dark);
+--card-foreground: var(
+--_apps---colors--card-foreground-dark
+);
+--popover: var(--_apps---colors--popover-dark);
+--popover-foreground: var(
+--_apps---colors--popover-foreground-dark
+);
+--primary: var(--_apps---colors--primary-dark);
+--primary-foreground: var(--_apps---colors--primary-foreground-dark);
+--secondary: var(--_apps---colors--secondary-dark);
+--secondary-foreground: var(
+--_apps---colors--secondary-foreground-dark
+);
+--muted: var(--_apps---colors--muted-dark);
+--muted-foreground: var(
+--_apps---colors--muted-foreground-dark
+);
+--accent: var(--_apps---colors--accent);
+--accent-foreground: var(--_apps---colors--accent-foreground);
+--destructive: var(--_apps---colors--destructive-dark);
+--border: var(--_apps---colors--border-dark);
+--input: var(--_apps---colors--input-dark);
+--ring: var(--_apps---colors--ring-dark);
+--chart-1: var(--_apps---charts--chart-1-dark);
+--chart-2: var(--_apps---charts--chart-2-dark);
+--chart-3: var(--_apps---charts--chart-3-dark);
+--chart-4: var(--_apps---charts--chart-4-dark);
+--chart-5: var(--_apps---charts--chart-5-dark);
+--sidebar: var(--_apps---sidebar--sidebar-dark);
+--sidebar-foreground: var(
+--_apps---sidebar--sidebar-foreground-dark
+);
+--sidebar-primary: var(--_apps---sidebar--sidebar-primary-dark);
+--sidebar-primary-foreground: var(
+--_apps---sidebar--sidebar-primary-foreground-dark
+);
+--sidebar-accent: var(--_apps---sidebar--sidebar-accent-dark);
+--sidebar-accent-foreground: var(
+--_apps---sidebar--sidebar-accent-foreground-dark
+);
+--sidebar-border: var(--_apps---sidebar--sidebar-border-dark);
+--sidebar-ring: var(--_apps---sidebar--sidebar-ring-dark);
+}
+
+@layer base {
+* {
+@apply border-border outline-ring/50;
+}
+
+body {
+@apply bg-background text-foreground;
+font-family: var(--body-font);
+}
+
+p, a, div {
+font-family: var(--body-font);
+}
+
+h1, h2, h3, h4, h5, h6 {
+font-family: var(--heading-font);
+}
+
+button {
+font-family: var(--button-font);
+}
+}
+
+/* Custom font utility classes */
+.font-heading {
+font-family: var(--heading-font);
+}
+
+.font-body {
+font-family: var(--body-font);
+}
+
+.font-button {
+font-family: var(--button-font);
+}
+
+/* Overrides */
+:is(
+button[role="combobox"],
+button[role="checkbox"],
+button[role="radio"],
+button[data-slot="select-trigger"],
+button[data-slot="button"]:not(:has(> svg):not(:has(> :not(svg))))
+) {
+border-color: var(--input);
+border-style: solid;
+border-width: 1px;
+}
+
+:is(a, button).bg-primary {
+background-color: var(--primary);
+}
+
+:is(a, button).text-primary-foreground {
+color: var(--primary-foreground);
+}
+
+:is(a, button).hover\:bg-primary\/90:hover {
+background-color: var(--primary) !important;
+opacity: 0.9;
+}
+
+/* Fix für weiße Buttons - sichtbarer Text */
+button[class*="bg-white"],
+button[class*="bg-gray-50"],
+.bg-white button,
+.bg-gray-50 button {
+color: #1f2937 !important; /* gray-800 */
+}
+
+button[class*="hover:bg-white"]:hover,
+button[class*="hover:bg-gray"]:hover {
+color: #1f2937 !important;
+}
+
+/* Sicherstellen dass outline Buttons normalerweise dunklen Text haben, ABER Tailwind-Klassen haben Vorrang */
+button[class*="variant-outline"]:not([class*="text-red"]):not([class*="text-orange"]):not([class*="text-green"]):not([class*="text-blue"]):not([class*="text-purple"]),
+button[class*="border-"]:not([class*="bg-"]):not([class*="text-red"]):not([class*="text-orange"]):not([class*="text-green"]):not([class*="text-blue"]):not([class*="text-purple"]) {
+color: #1f2937 !important;
+}
+
+/* Spezifische Fix für AlertDialog Cancel Buttons */
+[class*="AlertDialogCancel"] {
+color: #1f2937 !important;
+}
+
+/* AlertDialog Buttons: Standardmäßig dunkler Text */
+[role="alertdialog"] button:not([class*="bg-red"]):not([class*="bg-orange"]):not([class*="bg-green"]):not([class*="bg-blue"]):not([class*="bg-purple"]):not([class*="bg-black"]):not([class*="bg-primary"]):not([class*="bg-destructive"]) {
+color: #1f2937 !important;
+}
+
+/* Aber für farbige Buttons in AlertDialogs: weiße Schrift */
+[role="alertdialog"] button[class*="bg-red"],
+[role="alertdialog"] button[class*="bg-orange"],
+[role="alertdialog"] button[class*="bg-green"],
+[role="alertdialog"] button[class*="bg-blue"],
+[role="alertdialog"] button[class*="bg-purple"],
+[role="alertdialog"] button[class*="bg-black"],
+[role="alertdialog"] button[class*="bg-primary"],
+[role="alertdialog"] button[class*="bg-destructive"] {
+color: white !important;
+}
+
+/* Generelle Regel für farbige Buttons (außerhalb von AlertDialogs) */
+button[class*="bg-blue"],
+button[class*="bg-orange"],
+button[class*="bg-red"],
+button[class*="bg-green"],
+button[class*="bg-primary"],
+button[class*="bg-destructive"],
+button[class*="bg-purple"],
+button[class*="bg-black"] {
+color: white !important;
+}
+
+/* Admin Appointments: Grüner Bestätigen-Button mit weißer Schrift */
+button.bg-green-600,
+button.bg-green-700,
+button[class*="bg-green"] {
+color: #ffffff !important;
+}
+
+button.bg-green-600 span,
+button.bg-green-700 span,
+button[class*="bg-green"] span {
+color: #ffffff !important;
+}
+
+button.bg-green-600 svg,
+button.bg-green-700 svg,
+button[class*="bg-green"] svg {
+color: #ffffff !important;
+}
+
+/* ====================================
+LINK FIXES - mailto & tel Links
+GLOBALE REGEL FÜR ALLE INSTANZEN
+==================================== */
+
+/* Entferne ALLES was nicht sein soll - GLOBAL */
+a[href^="tel:"],
+a[href^="mailto:"] {
+text-decoration: none !important;
+padding: 0 !important;
+margin: 0 !important;
+display: inline !important;
+line-height: inherit !important;
+border: none !important;
+box-shadow: none !important;
+background: none !important;
+}
+
+/* Hover State - keine Änderungen außer Farbe */
+a[href^="tel:"]:hover,
+a[href^="mailto:"]:hover {
+text-decoration: none !important;
+padding: 0 !important;
+margin: 0 !important;
+}
+
+/* Focus State - keine Änderungen */
+a[href^="tel:"]:focus,
+a[href^="mailto:"]:focus {
+text-decoration: none !important;
+outline: none !important;
+padding: 0 !important;
+margin: 0 !important;
+}
+
+/* Visited State - keine Änderungen */
+a[href^="tel:"]:visited,
+a[href^="mailto:"]:visited {
+text-decoration: none !important;
+padding: 0 !important;
+margin: 0 !important;
+}
+
+/* Active State - keine Änderungen */
+a[href^="tel:"]:active,
+a[href^="mailto:"]:active {
+text-decoration: none !important;
+padding: 0 !important;
+margin: 0 !important;
+}
+
+/* Stelle sicher dass die Farben konsistent bleiben */
+a[href^="tel:"].text-blue-600,
+a[href^="mailto:"].text-blue-600 {
+color: #2563eb !important;
+}
+
+a[href^="tel:"].text-blue-600:hover,
+a[href^="mailto:"].text-blue-600:hover {
+color: #1d4ed8 !important;
+}
+
+/* SPEZIFISCH für AdminAppointments & alle Card-Komponenten */
+[class*="Card"] a[href^="tel:"],
+[class*="Card"] a[href^="mailto:"],
+.bg-gradient-to-br a[href^="tel:"],
+.bg-gradient-to-br a[href^="mailto:"],
+.space-y-2 a[href^="tel:"],
+.space-y-2 a[href^="mailto:"] {
+padding: 0 !important;
+margin: 0 !important;
+text-decoration: none !important;
+display: inline !important;
+border: none !important;
+box-shadow: none !important;
+background: none !important;
+}
+
+/* Für alle Links in Kontaktboxen - einheitliches Styling */
+.bg-gray-50 a[href^="tel:"],
+.bg-gray-50 a[href^="mailto:"],
+[class*="bg-gray"] a[href^="tel:"],
+[class*="bg-gray"] a[href^="mailto:"] {
+padding: 0 !important;
+margin: 0 !important;
+text-decoration: none !important;
+display: inline !important;
+border: none !important;
+box-shadow: none !important;
+background: none !important;
+}
+
+/* EXTRA STARK: Überschreibe ALLE möglichen Klassen-Kombinationen */
+a[href^="tel:"][class*="text-blue"],
+a[href^="mailto:"][class*="text-blue"],
+a[href^="tel:"][class*="hover:text-blue"],
+a[href^="mailto:"][class*="hover:text-blue"] {
+padding: 0 !important;
+margin: 0 !important;
+text-decoration: none !important;
+display: inline !important;
+border: none !important;
+box-shadow: none !important;
+background: none !important;
+}
+
+
+/* ===========================================
+ADMIN APPOINTMENTS - BUTTON FIXES
+Stelle sicher dass Stornieren/Ablehnen Buttons sichtbar sind
+=========================================== */
+
+/* Rot/Orange Buttons müssen IMMER sichtbar sein */
+.border-red-300.text-red-600,
+.border-red-400.text-red-700,
+.border-orange-300.text-orange-600,
+button.text-red-600,
+button.text-red-700,
+button.text-orange-600 {
+color: #dc2626 !important; /* red-600 */
+border-color: #fca5a5 !important; /* red-300 */
+}
+
+button.text-red-700 {
+color: #b91c1c !important; /* red-700 */
+}
+
+.border-red-300.text-red-600:hover,
+.border-red-400.text-red-700:hover,
+.border-orange-300.text-orange-600:hover,
+button.text-red-600:hover,
+button.text-red-700:hover,
+button.text-orange-600:hover {
+background-color: #fef2f2 !important; /* red-50 */
+}
+
+/* Settings/Dokumentation/Audit Buttons - immer schwarzes Icon */
+button[class*="text-gray-900"] svg,
+button.text-gray-900 svg {
+color: #111827 !important; /* gray-900 */
+}
+
+button[class*="text-gray-900"]:hover svg,
+button.text-gray-900:hover svg {
+color: #111827 !important;
+}
+
+/* Spezifisch für Settings Button mit Warning State */
+button.text-orange-600 svg {
+color: #ea580c !important; /* orange-600 */
+}
+
+/* Stelle sicher dass Icons immer dieselbe Farbe wie Text haben */
+button svg {
+color: inherit !important;
+}
+
+/* ===========================================
+APPOINTMENT DETAIL - STORNIEREN BUTTON FIX
+=========================================== */
+
+/* Orange Stornieren Button auf Terminansicht */
+.border-orange-300.text-orange-700,
+button.text-orange-700 {
+color: #c2410c !important; /* orange-700 */
+border-color: #fdba74 !important; /* orange-300 */
+}
+
+.border-orange-300.text-orange-700:hover,
+button.text-orange-700:hover {
+background-color: #ffedd5 !important; /* orange-100 */
+color: #c2410c !important;
+}
+
+/* Icons in orange Buttons */
+button.text-orange-700 svg {
+color: #c2410c !important; /* orange-700 */
+}
+
+button.text-orange-700:hover svg {
+color: #c2410c !important;
+}
+
+/* ===========================================
+GEFAHRENBEREICH BUTTON FIXES
+Alle Buttons in Gefahrenbereich-Kästen haben jetzt lesbaren Text
+=========================================== */
+
+/* Rot-Bereich: Dunkler roter Text auf hellem Hintergrund */
+.border-red-200.bg-white button,
+.border-red-200 button.border-red-300 {
+color: #991b1b !important; /* red-800 - dunklerer als red-700 für bessere Lesbarkeit */
+border-color: #fca5a5 !important; /* red-300 */
+}
+
+.border-red-200.bg-white button:hover,
+.border-red-200 button.border-red-300:hover {
+background-color: #fef2f2 !important; /* red-50 */
+color: #991b1b !important;
+}
+
+/* Orange-Bereich: Dunkler oranger Text auf hellem Hintergrund */
+.border-orange-200.bg-orange-50 button,
+.border-orange-200 button.border-orange-300 {
+color: #9a3412 !important; /* orange-800 - dunklerer als orange-700 */
+border-color: #fdba74 !important; /* orange-300 */
+}
+
+.border-orange-200.bg-orange-50 button:hover,
+.border-orange-200 button.border-orange-300:hover {
+background-color: #ffedd5 !important; /* orange-100 */
+color: #9a3412 !important;
+}
+
+/* Icons in Gefahrenbereich-Buttons müssen dieselbe Farbe haben */
+.border-red-200 button svg,
+.border-orange-200 button svg {
+color: inherit !important;
+}
+
+/* Spezielle Behandlung für rote Kästen */
+.bg-red-50 button.text-red-700 {
+color: #991b1b !important; /* red-800 statt red-700 */
+}
+
+
+/* ===========================================
+ALLES ZURÜCKSETZEN BUTTON FIX
+Spezifischer Fix für den roten "Alles zurücksetzen" Button
+=========================================== */
+
+/* Roter Kasten mit bg-red-100 */
+.border-red-400.bg-red-100 button,
+.bg-red-100 button.border-red-500 {
+color: #7f1d1d !important; /* red-900 - extra dunkel für Kontrast */
+border-color: #ef4444 !important; /* red-500 */
+background-color: white !important;
+}
+
+.border-red-400.bg-red-100 button:hover,
+.bg-red-100 button.border-red-500:hover {
+background-color: #fecaca !important; /* red-200 */
+color: #7f1d1d !important;
+}
+
+/* Icons in "Alles zurücksetzen" Button */
+.border-red-400.bg-red-100 button svg,
+.bg-red-100 button.border-red-500 svg {
+color: #7f1d1d !important; /* red-900 */
+}
+
+
+/* ===========================================
+SWITCH COMPONENT - FINAL FIX
+Garantiert 2:1 Pillenform auf allen Geräten & Bildschirmgrößen
+=========================================== */
+
+/* Root Element - Basis Dimensionen */
+button[data-slot="switch"],
+button[role="switch"] {
+  /* Exakte Größe erzwingen */
+  height: 24px !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  
+  /* Layout & Verhalten */
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  box-sizing: border-box !important;
+  
+  /* Verhindere Text-Wrapping */
+  white-space: nowrap !important;
+}
+
+/* Thumb Element - exakt 20x20px */
+span[data-slot="switch-thumb"] {
+  height: 20px !important;
+  width: 20px !important;
+  min-height: 20px !important;
+  max-height: 20px !important;
+  min-width: 20px !important;
+  max-width: 20px !important;
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Container Fix - verhindere dass Parent-Elemente Switch verzerren */
+div:has(> button[data-slot="switch"]) {
+  width: fit-content !important;
+  min-width: 44px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Flexbox Context Fix */
+.flex > button[data-slot="switch"],
+.inline-flex > button[data-slot="switch"],
+[class*="flex"] button[data-slot="switch"],
+[class*="grid"] button[data-slot="switch"] {
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  flex-basis: auto !important;
+}
+
+/* Mobile-spezifische Fixes */
+@media (max-width: 640px) {
+  button[data-slot="switch"],
+  button[role="switch"] {
+    height: 24px !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+  }
+  
+  span[data-slot="switch-thumb"] {
+    height: 20px !important;
+    width: 20px !important;
+    min-height: 20px !important;
+    max-height: 20px !important;
+    min-width: 20px !important;
+    max-width: 20px !important;
+  }
+}
+
+/* Extra kleine Displays (iPhone SE, etc.) */
+@media (max-width: 374px) {
+  button[data-slot="switch"],
+  button[role="switch"] {
+    height: 22px !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    min-height: 22px !important;
+    max-height: 22px !important;
+  }
+  
+  span[data-slot="switch-thumb"] {
+    height: 18px !important;
+    width: 18px !important;
+    min-height: 18px !important;
+    max-height: 18px !important;
+    min-width: 18px !important;
+    max-width: 18px !important;
+  }
+  
+  /* Thumb Translation anpassen für kleinere Switch */
+  span[data-slot="switch-thumb"][data-state="checked"] {
+    transform: translateX(18px) !important;
+  }
+}
+
+/* Touch-optimierte Mindestgröße für Tap Targets */
+@media (pointer: coarse) {
+  button[data-slot="switch"],
+  button[role="switch"] {
+    /* Mindestens 44x44px Tap Target (iOS HIG) aber Switch bleibt 44x24 */
+    position: relative;
+  }
+  
+  button[data-slot="switch"]::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 0;
+    right: 0;
+    bottom: -10px;
+    /* Erweitert den Touch-Bereich ohne visuell größer zu sein */
+  }
+}

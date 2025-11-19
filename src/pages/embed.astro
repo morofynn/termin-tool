@@ -1,0 +1,39 @@
+---
+import MainLayout from '../layouts/main.astro';
+import AppointmentScheduler from '../components/AppointmentScheduler';
+import { Toaster } from '../components/ui/sonner';
+---
+
+<MainLayout>
+<div class="min-h-screen bg-transparent">
+<AppointmentScheduler client:only="react" />
+<Toaster client:only="react" />
+</div>
+</MainLayout>
+
+<style is:global>
+/* Optimiert für iFrame Einbettung */
+body {
+background: transparent !important;
+margin: 0;
+padding: 0;
+}
+
+.min-h-screen {
+min-height: auto !important;
+padding: 1rem;
+}
+
+/* Mobile Optimierung für Embed */
+@media (max-width: 768px) {
+.min-h-screen {
+padding: 0.5rem;
+}
+}
+
+@media (max-width: 480px) {
+.min-h-screen {
+padding: 0.25rem;
+}
+}
+</style>

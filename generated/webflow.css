@@ -1,0 +1,83 @@
+/**
+GENERATED FILE
+
+webflow.css is generated automatically by webflow and is used to expose variables from your webflow design system in your app. 
+Any changes to this file will be overwritten the next time your app is loaded in the workbench.
+
+In order to override any of these variables you can redefine them in a
+css file that is imported globally after the webflow.css on your page.
+
+Font imports and @font-face declarations are in fonts.css, which should be imported before this file.
+
+You can learn more about CSS custom properties here:
+https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_cascading_variables/Using_CSS_custom_properties#inheritance_of_custom_properties
+*/
+
+:root {
+  --_apps---charts--chart-1: #2d62ff;
+  --_apps---charts--chart-2: #608df9;
+  --_apps---charts--chart-3: #194afa;
+  --_apps---charts--chart-4: #1e48c8;
+  --_apps---charts--chart-5: #0620ac;
+  --_apps---charts--chart-1-dark: #3c75ff;
+  --_apps---charts--chart-2-dark: #7fafff;
+  --_apps---charts--chart-3-dark: #1b4cfd;
+  --_apps---charts--chart-4-dark: #689dff;
+  --_apps---charts--chart-5-dark: #1c48d1;
+  --_apps---colors--background: #ffffff;
+  --_apps---colors--foreground: #030303;
+  --_apps---colors--card: #ffffff;
+  --_apps---colors--card-foreground: #060606;
+  --_apps---colors--popover: #f2f2f2;
+  --_apps---colors--popover-foreground: #060606;
+  --_apps---colors--primary: #2d62ff;
+  --_apps---colors--primary-foreground: #f5f8ff;
+  --_apps---colors--secondary: #def5ff;
+  --_apps---colors--secondary-foreground: #0a0d13;
+  --_apps---colors--muted: #f8f8f8;
+  --_apps---colors--muted-foreground: #7d797a;
+  --_apps---colors--accent: #e4e4e4;
+  --_apps---colors--accent-foreground: #0d0d0d;
+  --_apps---colors--destructive: #e03939;
+  --_apps---colors--border: #ebebeb;
+  --_apps---colors--input: hsla(0, 0.00%, 94.67%, 1.00);
+  --_apps---colors--ring: #406cdd;
+  --_apps---colors--background-dark: #000000;
+  --_apps---colors--foreground-dark: #f8f8f8;
+  --_apps---colors--card-dark: #020202;
+  --_apps---colors--card-foreground-dark: #f8f8f8;
+  --_apps---colors--popover-dark: #020202;
+  --_apps---colors--popover-foreground-dark: #f8f8f8;
+  --_apps---colors--primary-dark: #3c75ff;
+  --_apps---colors--primary-foreground-dark: #090d16;
+  --_apps---colors--secondary-dark: #010026;
+  --_apps---colors--secondary-foreground-dark: #f5f8ff;
+  --_apps---colors--muted-dark: #000000;
+  --_apps---colors--muted-foreground-dark: #747474;
+  --_apps---colors--accent-dark: #121212;
+  --_apps---colors--accent-foreground-dark: #f8f8f8;
+  --_apps---colors--destructive-dark: #ff645d;
+  --_apps---colors--border-dark: #eeeeee;
+  --_apps---colors--input-dark: hsla(127, 0.00%, 100.00%, 1.00);
+  --_apps---colors--ring-dark: #6191ff;
+  --_apps---sidebar--sidebar: #f8f8f8;
+  --_apps---sidebar--sidebar-foreground: #060606;
+  --_apps---sidebar--sidebar-primary: #2d62ff;
+  --_apps---sidebar--sidebar-primary-foreground: #f5f8ff;
+  --_apps---sidebar--sidebar-accent: #e4e4e4;
+  --_apps---sidebar--sidebar-accent-foreground: #0d0d0d;
+  --_apps---sidebar--sidebar-border: #ebebeb;
+  --_apps---sidebar--sidebar-ring: #406cdd;
+  --_apps---sidebar--sidebar-dark: #000000;
+  --_apps---sidebar--sidebar-foreground-dark: #f8f8f8;
+  --_apps---sidebar--sidebar-primary-dark: #3c75ff;
+  --_apps---sidebar--sidebar-primary-foreground-dark: #090d16;
+  --_apps---sidebar--sidebar-accent-dark: #121212;
+  --_apps---sidebar--sidebar-accent-foreground-dark: #f8f8f8;
+  --_apps---sidebar--sidebar-border-dark: #ffffff;
+  --_apps---sidebar--sidebar-ring-dark: #6191ff;
+  --_apps---sizes--radius: 0.25rem;
+  --_apps---typography--heading-font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  --_apps---typography--body-font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  --_apps---typography--button-font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
