@@ -383,7 +383,7 @@ export default function AppointmentScheduler() {
   if (maintenanceMode) {
     return (
       <div style={{ 
-        minHeight: '100vh',
+        minHeight: "auto",
         background: 'transparent',
         position: 'relative'
       }}>
@@ -394,7 +394,7 @@ export default function AppointmentScheduler() {
             maxWidth: 'clamp(20rem, 90vw, 42rem)',
             margin: '0 auto',
             padding: 'clamp(2rem, 8vw, 4rem)',
-            minHeight: '100vh',
+            minHeight: "auto",
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -470,7 +470,7 @@ export default function AppointmentScheduler() {
   if (isEventEnded) {
     return (
       <div style={{ 
-        minHeight: '100vh',
+        minHeight: "auto",
         background: 'transparent',
         position: 'relative'
       }}>
@@ -514,7 +514,7 @@ export default function AppointmentScheduler() {
             maxWidth: 'clamp(20rem, 90vw, 42rem)',
             margin: '0 auto',
             padding: 'clamp(2rem, 8vw, 4rem)',
-            minHeight: '100vh',
+            minHeight: "auto",
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -730,7 +730,7 @@ export default function AppointmentScheduler() {
   try {
     return (
       <div style={{ 
-        minHeight: '100vh',
+        minHeight: "auto",
         background: 'transparent',
         position: 'relative'
       }}>

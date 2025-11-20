@@ -5,7 +5,7 @@ import { Toaster } from '../components/ui/sonner';
 ---
 
 <MainLayout>
-<div class="min-h-screen" style="background: transparent;">
+<div id="app-container" style="background: transparent;">
 <!-- Fallback für wenn React nicht lädt -->
 <noscript>
 <div style="padding: 2rem; text-align: center; background: #fee2e2; color: #991b1b; border-radius: 0.5rem; margin: 2rem auto; max-width: 600px;">
@@ -36,7 +36,7 @@ pointer-events: auto !important;
 }
 
 /* WICHTIG: Container muss sich zusammenziehen können */
-html.in-iframe .min-h-screen {
+html.in-iframe #app-container {
 min-height: 0 !important;
 height: auto !important;
 }
@@ -61,35 +61,34 @@ document.documentElement.classList.add('in-iframe');
 let resizeTimeout = null;
 
 function getActualHeight() {
-// TRICK: Setze body height auf 'auto' um korrekte Messung zu erzwingen
+// Finde den App-Container (das ist unser Content)
+const container = document.getElementById('app-container');
 const body = document.body;
 const html = document.documentElement;
   
-// Temporär auf auto setzen
-const oldBodyHeight = body.style.height;
-const oldHtmlHeight = html.style.height;
-body.style.height = 'auto';
-html.style.height = 'auto';
+if (!container) {
+console.warn('⚠️ App-Container nicht gefunden!');
+return 600; // Fallback
+}
 
-// Jetzt messen - sollte die ECHTE Content-Höhe sein
-const bodyHeight = body.offsetHeight;
-const bodyScrollHeight = body.scrollHeight;
-const htmlHeight = html.offsetHeight;
-const htmlScrollHeight = html.scrollHeight;
+// Messe den CONTAINER (nicht body/html!)
+const containerRect = container.getBoundingClientRect();
+const containerHeight = Math.ceil(containerRect.height);
 
-// Zurücksetzen
-body.style.height = oldBodyHeight;
-html.style.height = oldHtmlHeight;
+// Addiere Padding/Margin vom body wenn vorhanden
+const bodyStyle = window.getComputedStyle(body);
+const bodyMarginTop = parseInt(bodyStyle.marginTop) || 0;
+const bodyMarginBottom = parseInt(bodyStyle.marginBottom) || 0;
+const bodyPaddingTop = parseInt(bodyStyle.paddingTop) || 0;
+const bodyPaddingBottom = parseInt(bodyStyle.paddingBottom) || 0;
 
-// Nimm die größte gemessene Höhe
-const height = Math.max(bodyHeight, bodyScrollHeight, htmlHeight, htmlScrollHeight);
+const totalPadding = bodyMarginTop + bodyMarginBottom + bodyPaddingTop + bodyPaddingBottom;
+const height = containerHeight + totalPadding;
 
 console.log('📏 Gemessene Höhen:', {
-'body.offsetHeight': bodyHeight,
-'body.scrollHeight': bodyScrollHeight,
-'html.offsetHeight': htmlHeight,
-'html.scrollHeight': htmlScrollHeight,
-'→ Verwende': height
+'container': containerHeight + 'px',
+'body padding/margin': totalPadding + 'px',
+'→ Total': height + 'px'
 });
 
 return height;
@@ -149,10 +148,15 @@ console.log('📐 Größenänderung erkannt:', entries.length, 'Elemente');
 debouncedResize();
 });
 
+// Beobachte den CONTAINER statt body
+const container = document.getElementById('app-container');
+if (container) {
+resizeObserver.observe(container);
+console.log('👀 ResizeObserver aktiviert (auf #app-container)');
+}
+
 resizeObserver.observe(document.body);
 resizeObserver.observe(document.documentElement);
-
-console.log('👀 ResizeObserver aktiviert');
 }
 
 // Bei Window-Resize
