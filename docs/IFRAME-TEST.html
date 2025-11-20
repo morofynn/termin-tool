@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iFrame Auto-Resize Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #1a1a1a;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+        }
+
+        .iframe-wrapper {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        #terminbuchung-iframe {
+            width: 100%;
+            border: 2px dashed #e0e0e0;
+            display: block;
+            min-height: 400px;
+            border-radius: 8px;
+            background: #fafafa;
+            transition: height 0.3s ease, border-color 0.3s ease;
+        }
+
+        #terminbuchung-iframe.active {
+            border-color: #667eea;
+            background: white;
+        }
+
+        .debug-panel {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .debug-panel h3 {
+            color: #00ff00;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .debug-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .debug-row:last-child {
+            border-bottom: none;
+        }
+
+        .debug-label {
+            color: #888;
+        }
+
+        .debug-value {
+            color: #00ff00;
+            font-weight: bold;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.active {
+            background: #00ff00;
+        }
+
+        .status-indicator.inactive {
+            background: #ff0000;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .test-info {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .test-info h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .test-info ul {
+            color: #856404;
+            margin-left: 20px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 10px;
+            }
+
+            .header, .iframe-wrapper, .debug-panel {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="test-container">
+    <!-- Header -->
+    <div class="header">
+        <h1>🧪 iFrame Auto-Resize Test</h1>
+        <p>Diese Seite testet ob das iFrame richtig größer UND kleiner wird.</p>
+    </div>
+
+    <!-- Test Info -->
+    <div class="test-info">
+        <h3>📋 Was du testen solltest:</h3>
+        <ul>
+            <li>Wechsle zwischen den Formular-Schritten → Höhe sollte sich anpassen</li>
+            <li>Öffne den Kalender → iFrame wird größer</li>
+            <li>Schließe den Kalender → iFrame wird wieder kleiner ✨</li>
+            <li>Ändere Browser-Breite → iFrame passt sich an</li>
+        </ul>
+    </div>
+
+    <!-- iFrame Container -->
+    <div class="iframe-wrapper">
+        <iframe 
+            id="terminbuchung-iframe"
+            src="http://localhost:3000"
+            title="Terminbuchung"
+            scrolling="no"
+            allow="clipboard-write"
+        ></iframe>
+    </div>
+
+    <!-- Debug Panel -->
+    <div class="debug-panel">
+        <h3>
+            <span class="status-indicator" id="status-indicator"></span>
+            Debug Console
+        </h3>
+        
+        <div class="debug-row">
+            <span class="debug-label">Status:</span>
+            <span class="debug-value" id="debug-status">Warte auf iFrame...</span>
+        </div>
+        
+        <div class="debug-row">
+            <span class="debug-label">Aktuelle Höhe:</span>
+            <span class="debug-value" id="debug-height">-</span>
+        </div>
+        
+        <div class="debug-row">
+            <span class="debug-label">Vorherige Höhe:</span>
+            <span class="debug-value" id="debug-prev-height">-</span>
+        </div>
+        
+        <div class="debug-row">
+            <span class="debug-label">Differenz:</span>
+            <span class="debug-value" id="debug-diff">-</span>
+        </div>
+        
+        <div class="debug-row">
+            <span class="debug-label">Breite:</span>
+            <span class="debug-value" id="debug-width">-</span>
+        </div>
+        
+        <div class="debug-row">
+            <span class="debug-label">Updates erhalten:</span>
+            <span class="debug-value" id="debug-count">0</span>
+        </div>
+        
+        <div class="debug-row">
+            <span class="debug-label">Letzte Aktualisierung:</span>
+            <span class="debug-value" id="debug-time">-</span>
+        </div>
+    </div>
+
+</div>
+
+<script>
+(function() {
+    const iframe = document.getElementById('terminbuchung-iframe');
+    const statusIndicator = document.getElementById('status-indicator');
+    const debugStatus = document.getElementById('debug-status');
+    const debugHeight = document.getElementById('debug-height');
+    const debugPrevHeight = document.getElementById('debug-prev-height');
+    const debugDiff = document.getElementById('debug-diff');
+    const debugWidth = document.getElementById('debug-width');
+    const debugCount = document.getElementById('debug-count');
+    const debugTime = document.getElementById('debug-time');
+
+    let updateCount = 0;
+    let previousHeight = 0;
+
+    if (!iframe) {
+        console.error('❌ iFrame nicht gefunden!');
+        return;
+    }
+
+    // Status als inaktiv setzen
+    statusIndicator.classList.add('inactive');
+
+    /**
+     * Setze iFrame Höhe
+     */
+    function setIframeHeight(height) {
+        // WICHTIG: Setze die Höhe DIREKT - kein Math.max!
+        // Damit kann der iFrame auch wieder KLEINER werden
+        iframe.style.height = height + 'px';
+        iframe.classList.add('active');
+        
+        console.log(`📏 iFrame Höhe aktualisiert: ${height}px`);
+    }
+
+    /**
+     * Update Debug Info
+     */
+    function updateDebugInfo(height, width) {
+        const now = new Date();
+        const diff = height - previousHeight;
+        
+        // Update Debug Panel
+        debugHeight.textContent = height + 'px';
+        debugPrevHeight.textContent = previousHeight + 'px';
+        debugWidth.textContent = width + 'px';
+        debugTime.textContent = now.toLocaleTimeString('de-DE');
+        debugCount.textContent = updateCount;
+        
+        // Differenz mit Farbe
+        if (diff > 0) {
+            debugDiff.textContent = `+${diff}px (größer) ⬆️`;
+            debugDiff.style.color = '#00ff00';
+        } else if (diff < 0) {
+            debugDiff.textContent = `${diff}px (kleiner) ⬇️`;
+            debugDiff.style.color = '#ff6b6b';
+        } else {
+            debugDiff.textContent = '0px (gleich) ➡️';
+            debugDiff.style.color = '#888';
+        }
+        
+        // Status
+        statusIndicator.classList.remove('inactive');
+        statusIndicator.classList.add('active');
+        debugStatus.textContent = 'Aktiv & Verbunden ✅';
+        debugStatus.style.color = '#00ff00';
+        
+        // Speichere vorherige Höhe
+        previousHeight = height;
+    }
+
+    /**
+     * Message Listener
+     */
+    window.addEventListener('message', function(event) {
+        // In Production: Origin prüfen!
+        // if (event.origin !== 'http://localhost:3000') return;
+
+        if (event.data && event.data.type === 'resize') {
+            const { height, width } = event.data;
+            
+            updateCount++;
+
+            if (height && typeof height === 'number') {
+                setIframeHeight(height);
+                updateDebugInfo(height, width || 0);
+            }
+
+            console.log('📐 Resize Event:', { height, width, count: updateCount });
+        }
+    });
+
+    console.log('✅ iFrame Auto-Resize Test aktiviert');
+    console.log('📡 Warte auf Messages vom iFrame...');
+    console.log('🎯 Teste: Navigiere durch das Formular und beobachte die Höhe!');
+})();
+</script>
+
+</body>
+</html>

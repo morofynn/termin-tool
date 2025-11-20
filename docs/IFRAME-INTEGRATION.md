@@ -2,112 +2,171 @@
 
 ## 📋 Übersicht
 
-Das Termin-Tool kann als **iFrame** auf jeder beliebigen Website eingebunden werden. Die Integration ist optimiert für:
+Dieser Guide zeigt dir, wie du das Terminbuchungstool als **iFrame** in deine Webflow-Seite oder andere Websites einbinden kannst.
 
-- ✅ **Automatische Höhenanpassung** (responsive)
-- ✅ **Kein Scroll-Problem** im iFrame
-- ✅ **Mobile-optimiert**
-- ✅ **Transparenter Hintergrund**
+## 🎯 Vorteile der iFrame-Integration
+
+- ✅ **Einfache Integration** - Nur ein `<iframe>`-Tag nötig
+- ✅ **Automatische Höhenanpassung** - iFrame wächst UND schrumpft mit dem Inhalt
+- ✅ **Responsiv** - Passt sich an alle Bildschirmgrößen an
+- ✅ **Isoliert** - Keine CSS/JS-Konflikte mit deiner Website
+- ✅ **Schnell eingebaut** - In 5 Minuten produktiv
 
 ---
 
-## 🚀 Schnellstart
+## 🚀 Quick Start
 
-### 1. Basis-Integration (minimal)
+### 1️⃣ iFrame in Webflow einbinden
+
+1. Füge ein **Embed-Element** in deine Webflow-Seite ein
+2. Kopiere diesen Code:
 
 ```html
-<iframe
-  src="https://YOUR-DOMAIN.webflow.io/YOUR-BASE-PATH/embed"
-  width="100%"
-  height="600"
-  style="border: none; max-width: 700px; margin: 0 auto; display: block;"
-  title="Terminbuchung"
-></iframe>
+<!-- Terminbuchung iFrame Container -->
+<div class="terminbuchung-wrapper" style="width: 100%; max-width: 800px; margin: 0 auto;">
+    <iframe 
+        id="terminbuchung-iframe"
+        src="DEINE-APP-URL-HIER"
+        title="Terminbuchung"
+        style="width: 100%; border: none; display: block; min-height: 400px;"
+        scrolling="no"
+        allow="clipboard-write"
+    ></iframe>
+</div>
+
+<script>
+// Auto-Resize: iFrame passt sich automatisch an Inhaltsgröße an
+(function() {
+    const iframe = document.getElementById('terminbuchung-iframe');
+    if (!iframe) return;
+
+    // Empfange Größen-Updates vom iFrame
+    window.addEventListener('message', function(event) {
+        // ⚠️ SICHERHEIT: In Produktion Origin prüfen!
+        // if (event.origin !== 'https://deine-domain.com') return;
+
+        if (event.data && event.data.type === 'resize') {
+            const { height } = event.data;
+            
+            // Setze Höhe direkt (damit iFrame auch kleiner werden kann!)
+            if (height && typeof height === 'number') {
+                iframe.style.height = height + 'px';
+                console.log('📏 iFrame Höhe:', height + 'px');
+            }
+        }
+    });
+
+    console.log('✅ Auto-Resize aktiviert');
+})();
+</script>
 ```
 
-### 2. Empfohlene Integration (mit Auto-Resize)
-
-Komplettes Beispiel siehe: `docs/EMBED-EXAMPLE.html`
+3. Ersetze `DEINE-APP-URL-HIER` mit deiner tatsächlichen App-URL:
+   - **Lokal (Dev):** `http://localhost:3000`
+   - **Production:** `https://dein-termin-tool.app` oder Webflow App URL
 
 ---
 
 ## 🔧 Technische Details
 
-### Wie funktioniert Auto-Resize?
+### So funktioniert das Auto-Resize
 
-Das Tool sendet automatisch Höhen-Updates an das Parent-Fenster via `postMessage`:
+1. **iFrame sendet Größen-Updates** (aus `src/pages/index.astro`):
+   ```javascript
+   window.parent.postMessage({
+       type: 'resize',
+       height: 800,  // Tatsächliche Content-Höhe
+       width: 600    // Aktuelle Breite
+   }, '*');
+   ```
 
+2. **Parent empfängt & setzt neue Höhe**:
+   ```javascript
+   window.addEventListener('message', function(event) {
+       if (event.data.type === 'resize') {
+           iframe.style.height = event.data.height + 'px';
+       }
+   });
+   ```
+
+3. **iFrame wird größer UND kleiner**:
+   - Früher: `Math.max(currentHeight, newHeight)` → nur größer
+   - Jetzt: `newHeight` → auch wieder kleiner! ✅
+
+### Wichtige Änderung (2025-01-20)
+
+**ALT (funktionierte nicht richtig):**
 ```javascript
-// Im iFrame (wird automatisch gemacht):
-window.parent.postMessage({
-  type: 'termin-tool-resize',
-  height: 1234
-}, '*');
+const currentHeight = parseInt(iframe.style.height) || 0;
+const newHeight = Math.max(currentHeight, height);
+iframe.style.height = newHeight + 'px';
 ```
+❌ Problem: iFrame wurde nur größer, nie wieder kleiner
 
-### Parent-Seite Listener
-
+**NEU (funktioniert!):**
 ```javascript
-window.addEventListener('message', function(event) {
-  if (event.data.type === 'termin-tool-resize') {
-    const iframe = document.getElementById('termin-tool-iframe');
-    iframe.style.height = event.data.height + 'px';
-  }
-});
+iframe.style.height = height + 'px';
 ```
+✅ Lösung: iFrame wird direkt auf die empfangene Höhe gesetzt
 
 ---
 
-## 📐 Styling-Empfehlungen
+## 📱 Responsive Verhalten
 
-### Container Setup
+### Das iFrame passt sich automatisch an:
 
-```css
-.iframe-container {
-  width: 100%;
-  max-width: 700px; /* Entspricht Tool-Breite */
-  margin: 0 auto;
-  background: transparent;
-}
+1. **Desktop** (1024px+):
+   - Volle Breite (max. 800px Container)
+   - Höhe passt sich an Formular an
 
-iframe {
-  width: 100%;
-  border: none;
-  display: block;
-  transition: height 0.3s ease;
-}
-```
+2. **Tablet** (768px - 1023px):
+   - Volle Container-Breite
+   - Kompakteres Layout
 
-### Mobile Optimierung
+3. **Mobile** (< 768px):
+   - 100% Breite
+   - Touch-optimierte Buttons
+   - Gestapelte Elemente
 
-```css
-@media (max-width: 768px) {
-  .iframe-container {
-    max-width: 100%;
-    padding: 0 0.5rem;
-  }
-}
-```
+### Automatische Höhenanpassung
+
+Der iFrame reagiert auf folgende Änderungen:
+
+- ✅ Schritt-Wechsel im Formular
+- ✅ Kalender öffnen/schließen
+- ✅ Fehler-Meldungen
+- ✅ Erfolgs-Bildschirm
+- ✅ Responsive Breakpoints (Breiten-Änderung!)
 
 ---
 
-## 🎨 Design-Anpassungen
+## 🎨 Styling-Optionen
 
-### Hintergrund
+### Container anpassen
 
-Das Tool hat einen **transparenten Hintergrund** und passt sich automatisch an das Design der Parent-Seite an.
+```html
+<div class="terminbuchung-wrapper" style="
+    width: 100%;
+    max-width: 900px;        /* Maximale Breite */
+    margin: 40px auto;       /* Zentrieren mit Abstand */
+    padding: 0 20px;         /* Seitlicher Abstand */
+    background: white;       /* Hintergrund */
+    border-radius: 12px;     /* Abgerundete Ecken */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);  /* Schatten */
+">
+    <iframe id="terminbuchung-iframe" ...></iframe>
+</div>
+```
 
-### Padding/Spacing
-
-- Desktop: 1rem Padding (im iFrame)
-- Tablet: 0.5rem Padding
-- Mobile: 0.25rem Padding
-
-Um zusätzlichen Abstand zu schaffen, füge Padding im Container hinzu:
+### iFrame Styling
 
 ```css
-.iframe-container {
-  padding: 2rem 1rem;
+#terminbuchung-iframe {
+    width: 100%;
+    border: none;
+    display: block;
+    min-height: 400px;      /* Minimale Höhe beim Laden */
+    transition: height 0.3s ease;  /* Sanfte Höhen-Änderung */
 }
 ```
 
@@ -115,245 +174,167 @@ Um zusätzlichen Abstand zu schaffen, füge Padding im Container hinzu:
 
 ## 🔒 Sicherheit
 
-### Content Security Policy
+### Origin-Prüfung (Production)
 
-Falls deine Seite CSP verwendet, stelle sicher dass iFrames erlaubt sind:
-
-```html
-<meta http-equiv="Content-Security-Policy" 
-      content="frame-src https://YOUR-DOMAIN.webflow.io;">
-```
-
-### postMessage Origin Check
-
-Für Produktion empfohlen - filtere Messages nach Origin:
+**Wichtig:** In Production solltest du die Message-Origin prüfen:
 
 ```javascript
 window.addEventListener('message', function(event) {
-  // Nur Messages von deiner Domain akzeptieren
-  const allowedOrigins = ['https://YOUR-DOMAIN.webflow.io'];
-  if (!allowedOrigins.includes(event.origin)) return;
-  
-  if (event.data.type === 'termin-tool-resize') {
-    // ... handle resize
-  }
+    // Nur Messages von deiner App-Domain akzeptieren
+    if (event.origin !== 'https://deine-app-domain.com') {
+        console.warn('Unerlaubte Origin:', event.origin);
+        return;
+    }
+
+    if (event.data && event.data.type === 'resize') {
+        // ... resize logic
+    }
 });
 ```
 
----
+### CSP (Content Security Policy)
 
-## 📱 Mobile Verhalten
-
-### Touch Scrolling
-
-Das iFrame nutzt `-webkit-overflow-scrolling: touch` für smoothes Scrolling auf iOS.
-
-### Viewport Meta Tag
-
-Stelle sicher dass deine Parent-Seite ein responsive Viewport Tag hat:
+Falls du CSP verwendest, erlaube iFrame:
 
 ```html
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" 
+      content="frame-src https://deine-app-domain.com;">
 ```
 
 ---
 
-## 🐛 Troubleshooting
+## 🐛 Debugging
 
-### Problem: iFrame zeigt nur weißen Bereich
+### Console Logs aktivieren
 
-**Lösung:** Prüfe ob die URL korrekt ist:
-- Lokale Entwicklung: `http://localhost:3000/embed`
-- Produktion: `https://YOUR-DOMAIN.webflow.io/YOUR-BASE-PATH/embed`
-
-### Problem: Höhe passt sich nicht an
-
-**Lösung:** 
-1. Prüfe ob der `message` Event Listener läuft
-2. Öffne Browser Console und schaue nach postMessage events
-3. Stelle sicher dass keine CSP die postMessage blockiert
-
-### Problem: Horizontal Scrollbar erscheint
-
-**Lösung:**
-```css
-iframe {
-  overflow-x: hidden;
-}
-
-.iframe-container {
-  overflow-x: hidden;
-}
-```
-
-### Problem: Loading State verschwindet nicht
-
-**Lösung:** Fallback-Timeout ist auf 3 Sekunden gesetzt. Falls das Tool langsam lädt, erhöhe den Timeout:
+Das iFrame sendet automatisch Debug-Informationen:
 
 ```javascript
-setTimeout(function() {
-  loading.style.display = 'none';
-  iframe.style.display = 'block';
-}, 5000); // 5 Sekunden
+// Im iFrame (index.astro):
+console.log('📐 Neue Dimensionen gesendet:', { height, width });
+
+// Im Parent (deine Website):
+console.log('📏 iFrame Höhe aktualisiert:', height + 'px');
 ```
 
----
-
-## 🎯 Best Practices
-
-### 1. Loading State anzeigen
-
-Zeige einen Loading-Spinner während das iFrame lädt (siehe EMBED-EXAMPLE.html)
-
-### 2. Lazy Loading
+### Debug-Panel einbauen (optional)
 
 ```html
-<iframe loading="lazy" ...>
-```
-
-Spart Bandbreite wenn das iFrame nicht sofort sichtbar ist.
-
-### 3. Title Attribut
-
-```html
-<iframe title="Terminbuchung" ...>
-```
-
-Wichtig für Accessibility (Screen Reader).
-
-### 4. Allow Attribute
-
-```html
-<iframe allow="clipboard-write" ...>
-```
-
-Erlaubt dem Tool den Clipboard zu verwenden (für Copy-Links etc.)
-
----
-
-## 📊 Performance
-
-### Initiale Ladezeit
-
-- ~2-3 Sekunden für initial load
-- Danach: Instant updates via postMessage
-
-### Größe
-
-- JavaScript Bundle: ~500KB (gzipped)
-- Minimal external requests
-- Cached nach erstem Load
-
----
-
-## 🔗 URLs
-
-### Entwicklung
-```
-http://localhost:3000/embed
-```
-
-### Produktion (Webflow Cloud)
-```
-https://YOUR-DOMAIN.webflow.io/YOUR-BASE-PATH/embed
-```
-
-### Custom Domain
-```
-https://termin.your-domain.com/embed
-```
-
----
-
-## 💡 Beispiele
-
-### WordPress Integration
-
-```php
-<!-- In deinem Template oder Shortcode -->
-<div class="termin-tool-wrapper">
-  <?php echo do_shortcode('[termin_tool_iframe]'); ?>
+<div class="debug-info" style="
+    margin-top: 20px;
+    padding: 15px;
+    background: #f0f0f0;
+    border-radius: 8px;
+    font-family: monospace;
+    font-size: 14px;
+">
+    <strong>Debug Info:</strong><br>
+    iFrame Höhe: <span id="debug-height">-</span>px<br>
+    iFrame Breite: <span id="debug-width">-</span>px<br>
+    Letzte Aktualisierung: <span id="debug-time">-</span>
 </div>
-```
-
-### React Integration
-
-```jsx
-import { useEffect, useRef } from 'react';
-
-function TerminToolEmbed() {
-  const iframeRef = useRef(null);
-
-  useEffect(() => {
-    const handleMessage = (event) => {
-      if (event.data.type === 'termin-tool-resize') {
-        if (iframeRef.current) {
-          iframeRef.current.style.height = `${event.data.height}px`;
-        }
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
-
-  return (
-    <iframe
-      ref={iframeRef}
-      src="https://YOUR-DOMAIN.webflow.io/embed"
-      style={{ width: '100%', border: 'none', height: '600px' }}
-      title="Terminbuchung"
-    />
-  );
-}
-```
-
-### Vue Integration
-
-```vue
-<template>
-  <iframe
-    ref="iframe"
-    src="https://YOUR-DOMAIN.webflow.io/embed"
-    :style="{ width: '100%', border: 'none', height: `${iframeHeight}px` }"
-    title="Terminbuchung"
-  />
-</template>
 
 <script>
-export default {
-  data() {
-    return {
-      iframeHeight: 600
-    };
-  },
-  mounted() {
-    window.addEventListener('message', this.handleMessage);
-  },
-  beforeUnmount() {
-    window.removeEventListener('message', this.handleMessage);
-  },
-  methods: {
-    handleMessage(event) {
-      if (event.data.type === 'termin-tool-resize') {
-        this.iframeHeight = event.data.height;
-      }
+window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'resize') {
+        const { height, width } = event.data;
+        
+        // Update Debug Info
+        document.getElementById('debug-height').textContent = height;
+        document.getElementById('debug-width').textContent = width;
+        document.getElementById('debug-time').textContent = 
+            new Date().toLocaleTimeString('de-DE');
     }
-  }
-};
+});
 </script>
 ```
 
 ---
 
-## 📞 Support
+## 📊 Performance
 
-Bei Fragen zur Integration:
-- GitHub Issues: [Link einfügen]
-- E-Mail: [E-Mail einfügen]
-- Dokumentation: `/docs/`
+### Optimierungen
+
+Das Auto-Resize ist optimiert:
+
+- ✅ **Debounced** - Max. alle 150ms Update
+- ✅ **MutationObserver** - Reagiert auf DOM-Änderungen
+- ✅ **ResizeObserver** - Reagiert auf Layout-Änderungen
+- ✅ **Interval Fallback** - Alle 2 Sekunden als Backup
+
+### Wichtige Events
+
+```javascript
+// Initial nach Load
+window.addEventListener('load', () => {
+    setTimeout(sendHeightToParent, 100);
+    setTimeout(sendHeightToParent, 500);
+    setTimeout(sendHeightToParent, 1000);
+});
+
+// Bei DOM-Änderungen
+const observer = new MutationObserver(debouncedResize);
+observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    characterData: true
+});
+
+// Bei Resize
+const resizeObserver = new ResizeObserver(debouncedResize);
+resizeObserver.observe(document.body);
+```
 
 ---
 
-**Letztes Update:** November 2024  
-**Version:** 1.0
+## 🔗 Weitere Integrationen
+
+### Popup-Integration
+
+Siehe: [IFRAME-RESPONSIVE.md](./IFRAME-RESPONSIVE.md)
+
+### Embed-Code Generator
+
+Coming Soon: Tool zum Generieren von Custom Embed-Codes
+
+---
+
+## ✅ Checkliste
+
+Vor dem Live-Gehen prüfen:
+
+- [ ] iFrame URL auf Production gesetzt
+- [ ] Origin-Prüfung aktiviert
+- [ ] Auto-Resize funktioniert (auch kleiner werden!)
+- [ ] Mobile Ansicht getestet
+- [ ] Console Logs in Production deaktiviert (optional)
+- [ ] CSP konfiguriert (falls verwendet)
+
+---
+
+## 🆘 Hilfe & Support
+
+### Häufige Probleme
+
+**Problem:** iFrame wird nur größer, nicht kleiner  
+**Lösung:** Stelle sicher, dass du NICHT `Math.max()` verwendest - siehe "Wichtige Änderung" oben
+
+**Problem:** Auto-Resize funktioniert nicht  
+**Lösung:** Prüfe Console auf Fehler, Origin-Prüfung eventuell zu streng
+
+**Problem:** iFrame zu klein beim Laden  
+**Lösung:** Erhöhe `min-height` im iFrame Style
+
+---
+
+## 📚 Siehe auch
+
+- [IFRAME-RESPONSIVE.md](./IFRAME-RESPONSIVE.md) - Responsive Design Details
+- [EMBED-INTEGRATION.md](./EMBED-INTEGRATION.md) - Alternative Embed-Methode
+- [docs/IFRAME-EXAMPLE.html](./IFRAME-EXAMPLE.html) - Vollständiges Beispiel
+
+---
+
+**Zuletzt aktualisiert:** 2025-01-20  
+**Version:** 2.0 (Auto-Resize Fix)

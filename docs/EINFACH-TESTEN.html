@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iFrame Resize Test - Einfach</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        
+        h1 {
+            color: #333;
+        }
+        
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        #terminbuchung {
+            width: 100%;
+            border: 2px solid #2d62ff;
+            border-radius: 8px;
+            display: block;
+        }
+        
+        .debug {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #2d62ff;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        
+        .debug-line {
+            margin: 5px 0;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .status.ok { background: #d4edda; color: #155724; }
+        .status.waiting { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 iFrame Resize Test</h1>
+        <p>Teste ob das iFrame korrekt größer UND kleiner wird.</p>
+        
+        <iframe 
+            id="terminbuchung"
+            src="http://localhost:4321/"
+            frameborder="0"
+            scrolling="no"
+            style="height: 600px;">
+        </iframe>
+        
+        <div class="debug">
+            <strong>📊 Debug Info:</strong>
+            <div id="debug-output"></div>
+        </div>
+    </div>
+
+    <script>
+        const iframe = document.getElementById('terminbuchung');
+        const debugOutput = document.getElementById('debug-output');
+        let messageCount = 0;
+        
+        function addDebugLine(text, isNew = false) {
+            const line = document.createElement('div');
+            line.className = 'debug-line';
+            line.innerHTML = text;
+            if (isNew) {
+                line.style.fontWeight = 'bold';
+                line.style.color = '#2d62ff';
+            }
+            debugOutput.insertBefore(line, debugOutput.firstChild);
+            
+            // Behalte nur die letzten 10 Zeilen
+            if (debugOutput.children.length > 10) {
+                debugOutput.removeChild(debugOutput.lastChild);
+            }
+        }
+        
+        // Empfange Höhen-Updates vom iFrame
+        window.addEventListener('message', function(event) {
+            // Sicherheit: Prüfe Origin (in Production)
+            // if (event.origin !== 'https://deine-domain.com') return;
+            
+            if (event.data && event.data.type === 'resize') {
+                messageCount++;
+                const newHeight = event.data.height;
+                const oldHeight = parseInt(iframe.style.height) || 0;
+                const diff = newHeight - oldHeight;
+                const direction = diff > 0 ? '📈 größer' : diff < 0 ? '📉 kleiner' : '➡️ gleich';
+                
+                // ⚠️ WICHTIG: Setze die Höhe DIREKT - KEIN Math.max!
+                iframe.style.height = newHeight + 'px';
+                
+                addDebugLine(
+                    `#${messageCount}: ${newHeight}px ${direction} (${diff > 0 ? '+' : ''}${diff}px) ` +
+                    `<span class="status ok">✓ Gesetzt</span>`,
+                    true
+                );
+            }
+        });
+        
+        addDebugLine('⏳ Warte auf iFrame-Messages... <span class="status waiting">Bereit</span>');
+    </script>
+</body>
+</html>

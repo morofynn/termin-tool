@@ -66,9 +66,9 @@ export const DEFAULT_SETTINGS = {
   messagePlaceholder: 'Ihre Nachricht...',
   preventDuplicateEmail: true,
   
-  // Event Location
-  standInfo: 'Stand B4.110, Messe München',
-  eventLocation: 'Stand B4.110',
+  // Event Location - ✅ GEÄNDERT: C4.246
+  standInfo: 'Stand C4.246, Messe München',
+  eventLocation: 'Stand C4.246',
   eventHall: 'Messe München',
   
   // Event Status

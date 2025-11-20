@@ -1,5 +1,7 @@
-export declare function createIX2Engine(): any;
-declare const _default: {
-    createIX2Engine: typeof createIX2Engine;
+type IXData = any;
+
+type IXEngine = {
+  init: (data: IXData) => void;
 };
-export default _default;
+
+export declare const createIX2Engine: () => IXEngine;
