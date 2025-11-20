@@ -143,23 +143,23 @@ export default function AppointmentQRCode({ appointmentId, appointmentData, sett
       </CardHeader>
 
       <CardContent className="pb-6 px-6">
-        {/* QR-Code Canvas - blauer Hintergrund mit abgerundeten Ecken */}
-        <div className="flex justify-center mb-6">
+        {/* QR-Code Container - Blauer Hintergrund mit Padding und Hover-Animation */}
+        <div className="flex justify-center mb-8">
           <button
             onClick={handleDownloadICS}
-            className="group relative bg-transparent p-0 transition-all duration-200 hover:scale-105 cursor-pointer border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="group relative bg-blue-600 p-4 rounded-2xl transition-all duration-200 hover:scale-105 cursor-pointer border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             aria-label="QR-Code scannen oder klicken zum Herunterladen"
           >
-            {/* Canvas QR-Code - 200x200px mit abgerundeten Ecken */}
+            {/* Canvas QR-Code - 200x200px */}
             <canvas
               ref={canvasRef}
-              className="w-[200px] h-[200px] rounded-2xl"
+              className="w-[200px] h-[200px]"
               style={{ 
                 imageRendering: 'pixelated',
               }}
             />
             
-            {/* Download Icon Overlay - nur Icon, kein Text */}
+            {/* Download Icon Overlay - weißes Icon */}
             <div className="absolute inset-0 bg-blue-700/95 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
               <Download className="w-12 h-12 text-white" />
             </div>

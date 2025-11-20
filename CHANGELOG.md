@@ -63,3 +63,13 @@ Alle wichtigen Änderungen am Terminbuchungs-Tool werden hier dokumentiert.
 ### Features in Planung
 - **Termin Umbuchungsfunktion**: Kunden können Termine selbst umbuchen
 - **CSV/Excel Export**: Export aller Termine für Reporting
+
+---
+
+## Geplant für [2.0.0] - 2026
+
+### Features in Planung
+- **Frei definierbare Zeit-Slots**: Nicht nur halbstündlich
+- **Frei definierbare Anzahl an Zeit-Slots pro Tag**: Flexible Kapazitäten
+- **Beliebige Veranstaltungstage**: Auch werktags möglich
+- **Benutzerfeedback-System Integration**: Community-Features

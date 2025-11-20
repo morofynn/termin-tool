@@ -194,6 +194,26 @@ export function ChangelogDialog({ children, className, onOpen, hasSeenChangelog:
                 </div>
               </div>
             </div>
+
+            {/* Version 2.0 - GEPLANT FÜR 2026 */}
+            <div className="border-l-2 border-gray-300 pl-4 opacity-50">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="font-semibold text-lg">Version 2.0</h3>
+                <Badge variant="outline">Geplant für 2026</Badge>
+              </div>
+              <p className="text-sm text-gray-500 mb-3">2026</p>
+              <div className="space-y-2">
+                <div>
+                  <h4 className="font-medium text-sm mb-1">Geplante Features</h4>
+                  <ul className="text-sm space-y-1 text-gray-700 list-disc list-inside">
+                    <li>Frei definierbare Zeit-Slots (nicht nur halbstündlich)</li>
+                    <li>Frei definierbare Anzahl an Zeit-Slots pro Tag</li>
+                    <li>Beliebige Veranstaltungstage (auch werktags)</li>
+                    <li>Benutzerfeedback-System Integration</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
         </ScrollArea>
       </DialogContent>

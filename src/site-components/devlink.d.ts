@@ -1,7 +1,5 @@
-type IXData = any;
-
-type IXEngine = {
-  init: (data: IXData) => void;
+export declare function createIX2Engine(): any;
+declare const _default: {
+    createIX2Engine: typeof createIX2Engine;
 };
-
-export declare const createIX2Engine: () => IXEngine;
+export default _default;
