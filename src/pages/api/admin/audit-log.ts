@@ -7,6 +7,7 @@ export interface AuditLogEntry {
   details: string;
   userEmail?: string;
   appointmentId?: string;
+  performedBy?: string;
 }
 
 export const GET: APIRoute = async ({ request, locals }) => {
@@ -101,6 +102,82 @@ export const GET: APIRoute = async ({ request, locals }) => {
       }),
       {
         status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+};
+
+/**
+ * POST: Neuen Audit Log Eintrag erstellen
+ */
+export const POST: APIRoute = async ({ request, locals }) => {
+  console.log('📝 POST /api/admin/audit-log - Creating audit log entry');
+  
+  try {
+    const KV = locals?.runtime?.env?.APPOINTMENTS_KV;
+
+    if (!KV) {
+      console.error('❌ KV store not available');
+      return new Response(
+        JSON.stringify({ 
+          error: 'KV Store nicht verfügbar',
+          details: 'Bitte stellen Sie sicher, dass das KV Binding in wrangler.jsonc korrekt konfiguriert ist.'
+        }),
+        { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const body = await request.json();
+    const { action, details, appointmentId, userEmail, performedBy } = body;
+
+    if (!action || !details) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Fehlende Pflichtfelder',
+          details: 'action und details sind erforderlich'
+        }),
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Erstelle Audit Log Eintrag
+    await createAuditLog(
+      KV,
+      action,
+      details,
+      appointmentId,
+      userEmail || performedBy
+    );
+
+    console.log('✅ Audit log entry created:', action);
+
+    return new Response(
+      JSON.stringify({ 
+        success: true,
+        message: 'Audit Log Eintrag erfolgreich erstellt'
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  } catch (error) {
+    console.error('❌ Error creating audit log entry:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+    return new Response(
+      JSON.stringify({ 
+        error: 'Fehler beim Erstellen des Audit Log Eintrags',
+        details: errorMessage
+      }),
+      {
+        status: 500,
         headers: { 'Content-Type': 'application/json' },
       }
     );
@@ -226,6 +303,7 @@ export async function createAuditLog(
       details,
       userEmail,
       appointmentId,
+      performedBy: userEmail || 'Admin',
     };
 
     // Speichere den Audit Log Eintrag

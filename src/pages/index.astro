@@ -8,17 +8,11 @@ import { Toaster } from '../components/ui/sonner';
 <div class="min-h-screen" style="background: transparent;">
 <!-- Fallback für wenn React nicht lädt -->
 <noscript>
-  <div style="padding: 2rem; text-align: center; background: #fee2e2; color: #991b1b; border-radius: 0.5rem; margin: 2rem auto; max-width: 600px;">
-    <h2 style="font-size: 1.5rem; margin-bottom: 1rem;">JavaScript erforderlich</h2>
-    <p>Bitte aktivieren Sie JavaScript, um das Terminbuchungstool zu nutzen.</p>
-  </div>
-</noscript>
-
-<!-- Loading Fallback -->
-<div id="loading-fallback" style="padding: 2rem; text-align: center; max-width: 600px; margin: 2rem auto;">
-  <div style="display: inline-block; width: 3rem; height: 3rem; border: 4px solid #e5e7eb; border-top-color: #2563eb; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-  <p style="margin-top: 1rem; color: #6b7280;">Terminbuchung wird geladen...</p>
+<div style="padding: 2rem; text-align: center; background: #fee2e2; color: #991b1b; border-radius: 0.5rem; margin: 2rem auto; max-width: 600px;">
+<h2 style="font-size: 1.5rem; margin-bottom: 1rem;">JavaScript erforderlich</h2>
+<p>Bitte aktivieren Sie JavaScript, um das Terminbuchungstool zu nutzen.</p>
 </div>
+</noscript>
 
 <AppointmentScheduler client:only="react" />
 <Toaster client:only="react" />
@@ -26,91 +20,152 @@ import { Toaster } from '../components/ui/sonner';
 </MainLayout>
 
 <style>
-@keyframes spin {
-  to { transform: rotate(360deg); }
+/* iFrame-spezifische Styles */
+html.in-iframe,
+html.in-iframe body {
+/* Verhindere dass das iFrame scrollt - Parent soll scrollen */
+overflow: visible !important;
+height: auto !important;
+min-height: 0 !important;
+}
+
+/* Touch-Action für besseres Scroll-Verhalten im iFrame */
+html.in-iframe body {
+touch-action: pan-y pan-x !important;
+pointer-events: auto !important;
+}
+
+/* WICHTIG: Container muss sich zusammenziehen können */
+html.in-iframe .min-h-screen {
+min-height: 0 !important;
+height: auto !important;
 }
 </style>
 
 <script>
-// Entferne Loading Fallback wenn React geladen ist
-if (typeof window !== 'undefined') {
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      const fallback = document.getElementById('loading-fallback');
-      if (fallback) {
-        fallback.style.display = 'none';
-      }
-    }, 1000);
-  });
-}
-
 // iFrame Auto-Resize: Sende Höhen-Updates an Parent Window
 (function() {
-  // Prüfe ob wir in einem iFrame sind
-  const isInIframe = window.self !== window.top;
+// Prüfe ob wir in einem iFrame sind
+const isInIframe = window.self !== window.top;
+
+if (!isInIframe) {
+console.log('Nicht im iFrame - Auto-Resize deaktiviert');
+return;
+}
+
+console.log('✅ Im iFrame erkannt - starte Auto-Resize');
+
+// Markiere HTML für iFrame-spezifische Styles
+document.documentElement.classList.add('in-iframe');
+
+let resizeTimeout = null;
+
+function getActualHeight() {
+// TRICK: Setze body height auf 'auto' um korrekte Messung zu erzwingen
+const body = document.body;
+const html = document.documentElement;
   
-  if (!isInIframe) return;
+// Temporär auf auto setzen
+const oldBodyHeight = body.style.height;
+const oldHtmlHeight = html.style.height;
+body.style.height = 'auto';
+html.style.height = 'auto';
 
-  function sendHeightToParent() {
-    try {
-      // Berechne die tatsächliche Höhe des Inhalts
-      const body = document.body;
-      const html = document.documentElement;
-      
-      const height = Math.max(
-        body.scrollHeight,
-        body.offsetHeight,
-        html.clientHeight,
-        html.scrollHeight,
-        html.offsetHeight
-      );
+// Jetzt messen - sollte die ECHTE Content-Höhe sein
+const bodyHeight = body.offsetHeight;
+const bodyScrollHeight = body.scrollHeight;
+const htmlHeight = html.offsetHeight;
+const htmlScrollHeight = html.scrollHeight;
 
-      // Sende Message an Parent Window
-      window.parent.postMessage({
-        type: 'resize',
-        height: height
-      }, '*'); // In Produktion: Ersetze '*' mit deiner Domain
+// Zurücksetzen
+body.style.height = oldBodyHeight;
+html.style.height = oldHtmlHeight;
 
-    } catch (error) {
-      console.error('Fehler beim Senden der Höhe:', error);
-    }
-  }
+// Nimm die größte gemessene Höhe
+const height = Math.max(bodyHeight, bodyScrollHeight, htmlHeight, htmlScrollHeight);
 
-  // Initial senden nach Load
-  window.addEventListener('load', () => {
-    setTimeout(sendHeightToParent, 100);
-    setTimeout(sendHeightToParent, 500);
-    setTimeout(sendHeightToParent, 1000);
-  });
+console.log('📏 Gemessene Höhen:', {
+'body.offsetHeight': bodyHeight,
+'body.scrollHeight': bodyScrollHeight,
+'html.offsetHeight': htmlHeight,
+'html.scrollHeight': htmlScrollHeight,
+'→ Verwende': height
+});
 
-  // Bei DOM-Änderungen
-  if (typeof MutationObserver !== 'undefined') {
-    const observer = new MutationObserver(() => {
-      sendHeightToParent();
-    });
-    
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      characterData: true
-    });
-  }
+return height;
+}
 
-  // Bei Resize
-  if (typeof ResizeObserver !== 'undefined') {
-    const resizeObserver = new ResizeObserver(() => {
-      sendHeightToParent();
-    });
-    resizeObserver.observe(document.body);
-  }
+function sendHeightToParent() {
+try {
+const height = getActualHeight();
 
-  // Fallback: Interval-basiert (alle 500ms)
-  setInterval(sendHeightToParent, 500);
+// Sende die Höhe IMMER (auch wenn kleiner)
+window.parent.postMessage({
+type: 'resize',
+height: height
+}, '*');
 
-  // Bei Window Resize
-  window.addEventListener('resize', sendHeightToParent);
+console.log('📤 Höhe gesendet:', height + 'px');
 
-  console.log('iFrame Auto-Resize aktiviert');
+} catch (error) {
+console.error('❌ Fehler beim Senden der Höhe:', error);
+}
+}
+
+// Debounced Resize
+function debouncedResize() {
+clearTimeout(resizeTimeout);
+resizeTimeout = setTimeout(sendHeightToParent, 100);
+}
+
+// Initial mehrmals senden (React braucht Zeit zum Rendern)
+console.log('⏱️ Sende initiale Höhen...');
+setTimeout(sendHeightToParent, 100);
+setTimeout(sendHeightToParent, 300);
+setTimeout(sendHeightToParent, 600);
+setTimeout(sendHeightToParent, 1000);
+
+// Bei DOM-Änderungen (wenn Content hinzugefügt/entfernt wird)
+if (typeof MutationObserver !== 'undefined') {
+const observer = new MutationObserver(function(mutations) {
+console.log('🔄 DOM-Änderung erkannt:', mutations.length, 'mutations');
+debouncedResize();
+});
+
+observer.observe(document.body, {
+childList: true,        // Wenn Kinder hinzugefügt/entfernt werden
+subtree: true,          // In allen Nachkommen
+attributes: true,       // Wenn Attribute ändern
+characterData: true     // Wenn Text ändert
+});
+
+console.log('👀 MutationObserver aktiviert');
+}
+
+// Bei Größenänderungen (wenn Elemente ihre Größe ändern)
+if (typeof ResizeObserver !== 'undefined') {
+const resizeObserver = new ResizeObserver(function(entries) {
+console.log('📐 Größenänderung erkannt:', entries.length, 'Elemente');
+debouncedResize();
+});
+
+resizeObserver.observe(document.body);
+resizeObserver.observe(document.documentElement);
+
+console.log('👀 ResizeObserver aktiviert');
+}
+
+// Bei Window-Resize
+window.addEventListener('resize', function() {
+console.log('🪟 Window Resize');
+debouncedResize();
+});
+
+// Fallback: Prüfe regelmäßig
+setInterval(function() {
+sendHeightToParent();
+}, 2000);
+
+console.log('✅ iFrame Auto-Resize vollständig aktiviert');
 })();
 </script>

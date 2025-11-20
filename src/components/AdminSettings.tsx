@@ -41,6 +41,7 @@ import {
 import { Separator } from './ui/separator';
 import AdminGoogleCalendar from './AdminGoogleCalendar';
 
+// ✅ KORRIGIERT: Defaults mit 2026 und richtigen Daten
 const defaultSettings: Settings = {
   companyName: 'MORO',
   companyAddress: 'Eupener Str. 124, 50933 Köln',
@@ -65,16 +66,16 @@ const defaultSettings: Settings = {
   showSlotIndicator: true,
   messagePlaceholder: 'Ihre Nachricht...',
   preventDuplicateEmail: true,
-  standInfo: 'Stand B4.110, Messe München',
-  eventLocation: 'Stand B4.110',
+  standInfo: 'Stand C4.246, Messe München',
+  eventLocation: 'Stand C4.246', // ✅ GEÄNDERT: C4.246
   eventHall: 'Messe München',
   eventEnded: false,
-  eventEndDate: new Date().toISOString(),
+  eventEndDate: new Date('2026-01-18T23:59:59.999Z').toISOString(),
   eventName: 'OPTI',
-  eventYear: 2025,
-  eventDateFriday: '2025-01-24',
-  eventDateSaturday: '2025-01-25',
-  eventDateSunday: '2025-01-26',
+  eventYear: 2026, // ✅ KORRIGIERT: 2026
+  eventDateFriday: '2026-01-16', // ✅ KORRIGIERT
+  eventDateSaturday: '2026-01-17', // ✅ KORRIGIERT
+  eventDateSunday: '2026-01-18', // ✅ KORRIGIERT
   maintenanceMode: false,
   maintenanceMessage: 'Das Buchungssystem ist vorübergehend nicht verfügbar. Bitte versuchen Sie es später erneut.',
   rateLimitingEnabled: true,
@@ -311,6 +312,7 @@ export default function AdminSettings({ isOpen, onClose }: AdminSettingsProps) {
     }
   };
 
+  // ✅ FIX: Audit Log Eintrag hinzufügen
   const handleResetSettings = async () => {
     setDeletingAll(true);
     try {
@@ -326,6 +328,17 @@ export default function AdminSettings({ isOpen, onClose }: AdminSettingsProps) {
         setHasUnsavedChanges(false);
         toast.success('Einstellungen wurden zurückgesetzt');
         setResetSettingsDialogOpen(false);
+        
+        // ✅ AUDIT LOG EINTRAG ERSTELLEN
+        await fetch(`${baseUrl}/api/admin/audit-log`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'Einstellungen zurückgesetzt',
+            details: 'Alle Einstellungen wurden auf die Standardwerte zurückgesetzt.',
+            performedBy: 'Admin'
+          }),
+        });
       } else {
         const data = await response.json();
         throw new Error(data.message || 'Fehler beim Zurücksetzen');
@@ -715,7 +728,7 @@ export default function AdminSettings({ isOpen, onClose }: AdminSettingsProps) {
                     className="text-sm"
                   />
                   <p className="text-xs text-gray-600">
-                    Z.B. "OPTI" wird mit dem Jahr kombiniert zu "OPTI 25"
+                    Z.B. "OPTI" wird mit dem Jahr kombiniert zu "OPTI 26"
                   </p>
                 </div>
 
@@ -731,7 +744,7 @@ export default function AdminSettings({ isOpen, onClose }: AdminSettingsProps) {
                     className="text-sm"
                   />
                   <p className="text-xs text-gray-600">
-                    Wird für die Anzeige verwendet (z.B. "OPTI 25")
+                    Wird für die Anzeige verwendet (z.B. "OPTI 26")
                   </p>
                 </div>
 
@@ -970,7 +983,7 @@ export default function AdminSettings({ isOpen, onClose }: AdminSettingsProps) {
                     id="eventLocation"
                     value={settings.eventLocation || ''}
                     onChange={(e) => updateSetting('eventLocation', e.target.value)}
-                    placeholder="Stand B4.110"
+                    placeholder="Stand C4.246"
                     className="text-sm"
                   />
                   <p className="text-xs text-gray-600">

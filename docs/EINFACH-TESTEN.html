@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminbuchung Test - Debug</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .info {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .debug {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 15px;
+            background: #fff;
+            border: 2px solid #333;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .debug h3 {
+            margin-top: 0;
+            color: #2563eb;
+        }
+        #log {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+
+<h1>🗓️ Terminbuchung - Debug Version</h1>
+<div class="info">
+    Mit Live-Debug-Ausgabe! 🐛
+</div>
+
+<div class="debug">
+    <h3>📊 Debug Log:</h3>
+    <div id="log">Warte auf Messages...</div>
+</div>
+
+<!-- IFRAME -->
+<div style="width: 100%; max-width: 800px; margin: 0 auto;">
+    <iframe 
+        id="termin-iframe"
+        src="http://localhost:3000"
+        style="width: 100%; border: none; display: block; background: white;"
+        scrolling="no"
+    ></iframe>
+</div>
+
+<script>
+(function() {
+    const iframe = document.getElementById('termin-iframe');
+    const logDiv = document.getElementById('log');
+    let messageCount = 0;
+    
+    function addLog(message, type = 'info') {
+        messageCount++;
+        const time = new Date().toLocaleTimeString();
+        const color = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#666';
+        
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerHTML = `<span style="color: ${color};">[${time}] ${message}</span>`;
+        
+        logDiv.appendChild(entry);
+        logDiv.scrollTop = logDiv.scrollHeight;
+        
+        // Behalte nur die letzten 20 Einträge
+        if (messageCount > 20) {
+            logDiv.removeChild(logDiv.firstChild);
+        }
+    }
+    
+    if (!iframe) {
+        addLog('❌ FEHLER: iFrame nicht gefunden!', 'error');
+        return;
+    }
+    
+    // Setze Starthöhe
+    iframe.style.height = '600px';
+    addLog('🚀 Start: iFrame Höhe = 600px');
+    
+    // Lausche auf Messages
+    window.addEventListener('message', function(event) {
+        addLog('📨 Message empfangen: ' + JSON.stringify(event.data));
+        
+        if (event.data && event.data.type === 'resize') {
+            const height = event.data.height;
+            
+            addLog('📏 Neue Höhe: ' + height + 'px');
+            
+            if (height && typeof height === 'number' && height > 0) {
+                const oldHeight = iframe.style.height;
+                iframe.style.height = height + 'px';
+                
+                addLog('✅ iFrame aktualisiert: ' + oldHeight + ' → ' + height + 'px', 'success');
+            } else {
+                addLog('⚠️ Ungültige Höhe: ' + height, 'error');
+            }
+        }
+    });
+    
+    addLog('👂 Event Listener aktiviert');
+})();
+</script>
+
+</body>
+</html>
