@@ -1,12 +1,14 @@
 import type { APIRoute } from 'astro';
 import type { Appointment } from '../../../types/appointments';
 import { sendCustomerNotification, sendAdminNotification } from '../../../lib/email';
-import { WebflowClient } from 'webflow-api';
 import { createAuditLog } from './audit-log';
 import { DAY_NAMES } from '../../../lib/constants';
 import { getAppointmentUrl } from '../../../lib/url-utils';
 
-const APPOINTMENTS_PREFIX = 'appointment:';
+// ✅ MIGRATION: Import Utils
+import { getAppointment, saveAppointment, deleteAppointment as deleteAppointmentFromKV, getAllAppointments, getSettings } from '../../../lib/kv-utils';
+import { releaseSlot, extractDateKey } from '../../../lib/slot-utils';
+import { validateAndParseBerlinDate } from '../../../lib/date-utils';
 
 // GET: Alle Termine abrufen
 export const GET: APIRoute = async ({ locals }) => {
@@ -19,22 +21,19 @@ export const GET: APIRoute = async ({ locals }) => {
       });
     }
 
-    // Alle Termine aus dem KV Store laden
-    const keys = await KV.list({ prefix: APPOINTMENTS_PREFIX });
-    const appointments: Appointment[] = [];
+    // ✅ MIGRATION: Verwende getAllAppointments() Utility
+    const appointments = await getAllAppointments(KV);
 
-    for (const key of keys.keys) {
-      const value = await KV.get(key.name);
-      if (value) {
-        appointments.push(JSON.parse(value));
-      }
-    }
-
-    // Nach Datum sortieren
+    // Nach Datum sortieren (mit Validierung)
     appointments.sort((a, b) => {
-      const dateA = new Date(a.appointmentDate).getTime();
-      const dateB = new Date(b.appointmentDate).getTime();
-      return dateA - dateB;
+      const dateA = validateAndParseBerlinDate(a.appointmentDate);
+      const dateB = validateAndParseBerlinDate(b.appointmentDate);
+      
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+      
+      return dateA.getTime() - dateB.getTime();
     });
 
     return new Response(JSON.stringify({ appointments }), {
@@ -75,11 +74,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    const key = `${APPOINTMENTS_PREFIX}${id}`;
-
-    // Termin laden
-    const appointmentData = await KV.get(key);
-    if (!appointmentData) {
+    // ✅ MIGRATION: Verwende getAppointment() Utility
+    const appointment = await getAppointment(KV, id);
+    if (!appointment) {
       console.error(`❌ Appointment not found: ${id}`);
       return new Response(JSON.stringify({ error: 'Appointment not found' }), {
         status: 404,
@@ -87,7 +84,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    const appointment: Appointment = JSON.parse(appointmentData);
     console.log(`✅ Appointment loaded: ${appointment.name} - ${appointment.email}`);
 
     // Aktionen ausführen
@@ -100,7 +96,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         return await cancelAppointment(appointment, KV, request.url, locals, body.reason);
       case 'delete':
         console.log('🔄 Executing delete action...');
-        return await deleteAppointment(appointment, KV, locals);
+        return await deleteAppointmentHandler(appointment, KV, locals);
       default:
         console.error(`❌ Invalid action: ${action}`);
         return new Response(JSON.stringify({ error: 'Invalid action' }), {
@@ -123,7 +119,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
 /**
  * BESTÄTIGT einen Termin
- * ✅ FIX: Verwendet neue Email-API und Google Calendar korrekt
  */
 async function confirmAppointment(
   appointment: Appointment,
@@ -133,7 +128,10 @@ async function confirmAppointment(
 ) {
   // Status auf confirmed ändern
   appointment.status = 'confirmed';
-  await KV.put(`${APPOINTMENTS_PREFIX}${appointment.id}`, JSON.stringify(appointment));
+  appointment.updatedAt = new Date().toISOString();
+  
+  // ✅ MIGRATION: Verwende saveAppointment() Utility
+  await saveAppointment(KV, appointment);
 
   // Audit Log
   await createAuditLog(
@@ -144,46 +142,43 @@ async function confirmAppointment(
     'Admin'
   );
 
-  // ✅ Zentrale URL-Generierung mit ADMIN_BASE_URL
   const originUrl = new URL(requestUrl).origin;
   const appointmentUrl = getAppointmentUrl(appointment.id, locals?.runtime?.env, originUrl);
 
   // Google Calendar Event erstellen
   let googleEventLink: string | null = null;
   try {
+    const settings = await getSettings(KV);
     googleEventLink = await createGoogleCalendarEvent(
       appointment,
       appointmentUrl,
-      locals
+      locals,
+      settings.appointmentDurationMinutes
     );
-    console.log('✅ Google Calendar event created:', googleEventLink);
     
-    // Speichere Event ID im Appointment
     if (googleEventLink) {
-      await KV.put(`${APPOINTMENTS_PREFIX}${appointment.id}`, JSON.stringify(appointment));
+      console.log('✅ Google Calendar event created:', googleEventLink);
+      await saveAppointment(KV, appointment);
     }
   } catch (calError) {
     console.error('❌ Error creating Google Calendar event:', calError);
     
-    // Audit Log für Calendar-Fehler
-    const errorMessage = calError instanceof Error ? calError.message : 'Unbekannter Fehler';
     await createAuditLog(
       KV,
-      '❌ Google Calendar Fehler',
-      `Fehler beim Erstellen des Calendar-Events für ${appointment.name}: ${errorMessage}`,
+      '⚠️ Google Calendar Fehler',
+      `Fehler beim Erstellen des Calendar-Events für ${appointment.name}: ${calError instanceof Error ? calError.message : 'Unbekannt'}`,
       appointment.id,
       'system'
     );
-    // Weiter ohne Google Calendar
   }
 
-  // ✅ FIX: E-Mail an Kunden mit neuer API senden
+  // E-Mail an Kunden senden
   try {
-    const emailSent = await sendCustomerNotification(
+    await sendCustomerNotification(
       {
         name: appointment.name,
         email: appointment.email,
-        day: appointment.appointmentDate, // ISO-Format
+        day: appointment.appointmentDate,
         time: appointment.time,
         company: appointment.company,
         phone: appointment.phone || '',
@@ -194,39 +189,30 @@ async function confirmAppointment(
       },
       locals?.runtime?.env
     );
-
-    if (!emailSent) {
-      console.error('❌ Failed to send confirmation email to customer');
-    }
   } catch (emailError) {
     console.error('❌ Error sending confirmation email to customer:', emailError);
   }
 
-  // ✅ NEU: Admin-Benachrichtigung senden (falls gewünscht)
+  // Admin-Benachrichtigung senden
   try {
-    const settingsData = await KV.get('settings');
-    if (settingsData) {
-      const settings = JSON.parse(settingsData);
-      const adminEmail = settings.adminEmail;
-      
-      if (adminEmail) {
-        await sendAdminNotification(
-          {
-            name: appointment.name,
-            email: appointment.email,
-            day: appointment.appointmentDate,
-            time: appointment.time,
-            company: appointment.company,
-            phone: appointment.phone || '',
-            message: appointment.message,
-            appointmentUrl,
-            action: 'confirmed',
-            status: 'confirmed',
-          },
-          adminEmail,
-          locals?.runtime?.env
-        );
-      }
+    const settings = await getSettings(KV);
+    if (settings.adminEmail) {
+      await sendAdminNotification(
+        {
+          name: appointment.name,
+          email: appointment.email,
+          day: appointment.appointmentDate,
+          time: appointment.time,
+          company: appointment.company,
+          phone: appointment.phone || '',
+          message: appointment.message,
+          appointmentUrl,
+          action: 'confirmed',
+          status: 'confirmed',
+        },
+        settings.adminEmail,
+        locals?.runtime?.env
+      );
     }
   } catch (error) {
     console.error('❌ Error sending admin notification:', error);
@@ -240,7 +226,6 @@ async function confirmAppointment(
 
 /**
  * STORNIERT einen Termin
- * ✅ FIX: Verwendet neue Email-API
  */
 async function cancelAppointment(
   appointment: Appointment,
@@ -251,8 +236,13 @@ async function cancelAppointment(
 ) {
   // Status auf cancelled ändern
   appointment.status = 'cancelled';
-  appointment.cancellationReason = reason;
-  await KV.put(`${APPOINTMENTS_PREFIX}${appointment.id}`, JSON.stringify(appointment));
+  appointment.updatedAt = new Date().toISOString();
+  if (reason) {
+    appointment.message = (appointment.message || '') + `\n\nStornierungsgrund: ${reason}`;
+  }
+  
+  // ✅ MIGRATION: Verwende saveAppointment() Utility
+  await saveAppointment(KV, appointment);
 
   // Audit Log
   await createAuditLog(
@@ -273,11 +263,10 @@ async function cancelAppointment(
     console.error('❌ Error deleting Google Calendar event:', calError);
   }
 
-  // ✅ Zentrale URL-Generierung mit ADMIN_BASE_URL
   const originUrl = new URL(requestUrl).origin;
   const appointmentUrl = getAppointmentUrl(appointment.id, locals?.runtime?.env, originUrl);
 
-  // ✅ FIX: E-Mail an Kunden mit neuer API senden
+  // E-Mail an Kunden senden
   try {
     await sendCustomerNotification(
       {
@@ -298,6 +287,32 @@ async function cancelAppointment(
     console.error('❌ Error sending cancellation email:', emailError);
   }
 
+  // Admin-Benachrichtigung senden
+  try {
+    const settings = await getSettings(KV);
+    if (settings.adminEmail && settings.emailNotifications) {
+      await sendAdminNotification(
+        {
+          name: appointment.name,
+          email: appointment.email,
+          day: appointment.appointmentDate,
+          time: appointment.time,
+          company: appointment.company,
+          phone: appointment.phone || '',
+          message: appointment.message,
+          appointmentUrl,
+          action: 'cancelled',
+          status: 'cancelled',
+        },
+        settings.adminEmail,
+        locals?.runtime?.env
+      );
+      console.log('✅ Admin cancellation notification sent');
+    }
+  } catch (error) {
+    console.error('❌ Error sending admin notification:', error);
+  }
+
   return new Response(JSON.stringify({ success: true }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
@@ -307,7 +322,7 @@ async function cancelAppointment(
 /**
  * LÖSCHT einen Termin endgültig
  */
-async function deleteAppointment(
+async function deleteAppointmentHandler(
   appointment: Appointment,
   KV: any,
   locals: any
@@ -315,7 +330,7 @@ async function deleteAppointment(
   console.log(`🗑️ Deleting appointment: ${appointment.id}`);
   
   try {
-    // 1. Audit Log für Löschung
+    // Audit Log für Löschung
     await createAuditLog(
       KV,
       'Termin gelöscht',
@@ -324,7 +339,7 @@ async function deleteAppointment(
       'Admin'
     );
 
-    // 2. Google Calendar Event löschen
+    // Google Calendar Event löschen
     try {
       if (appointment.googleEventId) {
         await deleteGoogleCalendarEvent(appointment.googleEventId, locals);
@@ -332,37 +347,35 @@ async function deleteAppointment(
       }
     } catch (calError) {
       console.error('❌ Error deleting Google Calendar event:', calError);
+      
+      await createAuditLog(
+        KV,
+        '⚠️ Google Calendar Fehler',
+        `Fehler beim Löschen des Calendar-Events: ${calError instanceof Error ? calError.message : 'Unbekannt'}`,
+        appointment.id,
+        'system'
+      );
     }
 
-    // 3. Termin aus appointments:list entfernen
-    const listKey = 'appointments:list';
-    const listData = await KV.get(listKey);
-    if (listData) {
-      const appointmentsList: string[] = JSON.parse(listData);
-      const updatedList = appointmentsList.filter(id => id !== appointment.id);
-      await KV.put(listKey, JSON.stringify(updatedList));
-      console.log(`✅ Removed ${appointment.id} from appointments:list`);
+    // ✅ MIGRATION: Slot freigeben mit Utility
+    const appointmentDate = validateAndParseBerlinDate(appointment.appointmentDate);
+    if (appointmentDate) {
+      const dateKey = extractDateKey(appointment.appointmentDate);
+      await releaseSlot(KV, appointment.day, appointment.time, dateKey, appointment.id);
+    } else {
+      console.error(`Invalid appointmentDate for appointment ${appointment.id}: ${appointment.appointmentDate}`);
+      
+      await createAuditLog(
+        KV,
+        '⚠️ Ungültiges Datum',
+        `Termin ${appointment.id} hat ein ungültiges appointmentDate: ${appointment.appointmentDate}`,
+        appointment.id,
+        'system'
+      );
     }
 
-    // 4. Slot-Zähler dekrementieren
-    const slotKey = `slot:${appointment.day}:${appointment.time}`;
-    const slotData = await KV.get(slotKey);
-    if (slotData) {
-      const slotCount = parseInt(slotData);
-      if (slotCount > 0) {
-        const newCount = slotCount - 1;
-        if (newCount === 0) {
-          await KV.delete(slotKey);
-          console.log(`✅ Deleted slot key: ${slotKey}`);
-        } else {
-          await KV.put(slotKey, newCount.toString());
-          console.log(`✅ Decremented slot count for ${slotKey}: ${slotCount} -> ${newCount}`);
-        }
-      }
-    }
-
-    // 5. Termin selbst löschen
-    await KV.delete(`${APPOINTMENTS_PREFIX}${appointment.id}`);
+    // ✅ MIGRATION: Termin löschen mit Utility (inkl. Liste-Cleanup)
+    await deleteAppointmentFromKV(KV, appointment.id);
     console.log('✅ Appointment deleted from KV');
 
     return new Response(JSON.stringify({ success: true }), {
@@ -372,6 +385,19 @@ async function deleteAppointment(
   } catch (error) {
     console.error('❌ Error in deleteAppointment:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    try {
+      await createAuditLog(
+        KV,
+        '❌ Termin-Löschung fehlgeschlagen',
+        `Fehler beim Löschen von Termin ${appointment.id}: ${errorMessage}`,
+        appointment.id,
+        'system'
+      );
+    } catch (auditError) {
+      console.error('Failed to create audit log:', auditError);
+    }
+    
     return new Response(JSON.stringify({ 
       error: 'Failed to delete appointment',
       details: errorMessage 
@@ -384,7 +410,6 @@ async function deleteAppointment(
 
 /**
  * HELPER: Google Calendar Event erstellen
- * ✅ FIX: Verwendet OAuth Refresh Token Flow + speichert Event ID
  */
 async function createGoogleCalendarEvent(
   appointment: Appointment,
@@ -403,7 +428,7 @@ async function createGoogleCalendarEvent(
       return null;
     }
 
-    // 1. Access Token von Refresh Token holen
+    // Access Token von Refresh Token holen
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -423,15 +448,19 @@ async function createGoogleCalendarEvent(
 
     const { access_token } = await tokenResponse.json() as { access_token: string };
 
-    // 2. Parse appointment date und time
+    // Parse appointment date und time
+    const appointmentDate = validateAndParseBerlinDate(appointment.appointmentDate);
+    if (!appointmentDate) {
+      throw new Error(`Invalid appointmentDate: ${appointment.appointmentDate}`);
+    }
+    
     const [hours, minutes] = appointment.time.split(':').map(Number);
-    const appointmentDate = new Date(appointment.appointmentDate);
     appointmentDate.setHours(hours, minutes, 0, 0);
 
     const endDate = new Date(appointmentDate);
     endDate.setMinutes(endDate.getMinutes() + durationMinutes);
 
-    // 3. Event erstellen
+    // Event erstellen
     const event = {
       summary: `Termin mit ${appointment.name}${appointment.company ? ` (${appointment.company})` : ''}`,
       description: [
@@ -456,7 +485,6 @@ async function createGoogleCalendarEvent(
       reminders: {
         useDefault: false,
         overrides: [
-          { method: 'email', minutes: 24 * 60 },
           { method: 'popup', minutes: 30 },
         ],
       },

@@ -6,12 +6,13 @@ const APPOINTMENTS_PREFIX = 'appointment:';
 
 /**
  * ✅ FIX: DELETE ALL APPOINTMENTS mit vollständigem KV Cleanup
+ * ✅ FIX #2: Verwendet jetzt Refresh Token (statt Access Token)
  * 
  * Löscht:
  * - Alle Termine (appointment:*)
  * - appointments:list
  * - Alle Slot-Zähler (slot:*)
- * - Google Calendar Events (optional)
+ * - Google Calendar Events (mit korrektem Token-Flow)
  * 
  * Erstellt Audit Log Entry über die Löschung
  */
@@ -45,38 +46,68 @@ export const POST: APIRoute = async ({ locals }) => {
       }
     }
 
-    // 2. Google Calendar Events löschen (optional)
+    // 2. Google Calendar Events löschen (mit korrektem Refresh Token Flow)
     let googleEventsDeleted = 0;
-    const token = locals?.runtime?.env?.GOOGLE_ACCESS_TOKEN;
-    const calendarId = locals?.runtime?.env?.GOOGLE_CALENDAR_ID || 'primary';
+    const googleClientId = locals?.runtime?.env?.GOOGLE_CLIENT_ID || import.meta.env.GOOGLE_CLIENT_ID;
+    const googleClientSecret = locals?.runtime?.env?.GOOGLE_CLIENT_SECRET || import.meta.env.GOOGLE_CLIENT_SECRET;
+    const googleRefreshToken = locals?.runtime?.env?.GOOGLE_REFRESH_TOKEN || import.meta.env.GOOGLE_REFRESH_TOKEN;
+    const calendarId = locals?.runtime?.env?.GOOGLE_CALENDAR_ID || import.meta.env.GOOGLE_CALENDAR_ID || 'primary';
     
-    if (token) {
+    if (googleClientId && googleClientSecret && googleRefreshToken) {
       console.log('🗓️ Deleting Google Calendar events...');
-      for (const appointment of appointments) {
-        if (appointment.googleEventId) {
-          try {
-            const response = await fetch(
-              `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${appointment.googleEventId}`,
-              {
-                method: 'DELETE',
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              }
-            );
+      
+      try {
+        // ✅ FIX #2: Access Token von Refresh Token holen
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: googleClientId,
+            client_secret: googleClientSecret,
+            refresh_token: googleRefreshToken,
+            grant_type: 'refresh_token',
+          }),
+        });
 
-            if (response.ok || response.status === 404) {
-              googleEventsDeleted++;
-              console.log(`✅ Deleted Google Calendar event: ${appointment.googleEventId}`);
-            } else {
-              console.error(`❌ Failed to delete Google Calendar event: ${response.status}`);
+        if (tokenResponse.ok) {
+          const tokenData = await tokenResponse.json() as { access_token: string };
+          console.log('✅ Got access token from refresh token');
+
+          // Lösche alle Events mit dem frischen Access Token
+          for (const appointment of appointments) {
+            if (appointment.googleEventId) {
+              try {
+                const response = await fetch(
+                  `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${appointment.googleEventId}`,
+                  {
+                    method: 'DELETE',
+                    headers: {
+                      Authorization: `Bearer ${tokenData.access_token}`,
+                    },
+                  }
+                );
+
+                if (response.ok || response.status === 404) {
+                  googleEventsDeleted++;
+                  console.log(`✅ Deleted Google Calendar event: ${appointment.googleEventId}`);
+                } else {
+                  console.error(`❌ Failed to delete Google Calendar event ${appointment.googleEventId}: ${response.status}`);
+                }
+              } catch (error) {
+                console.error(`❌ Error deleting Google Calendar event ${appointment.googleEventId}:`, error);
+              }
             }
-          } catch (error) {
-            console.error(`❌ Error deleting Google Calendar event:`, error);
           }
+          console.log(`✅ Deleted ${googleEventsDeleted} Google Calendar events`);
+        } else {
+          const errorText = await tokenResponse.text();
+          console.error('❌ Failed to refresh Google token:', errorText);
         }
+      } catch (tokenError) {
+        console.error('❌ Error refreshing Google token:', tokenError);
       }
-      console.log(`✅ Deleted ${googleEventsDeleted} Google Calendar events`);
+    } else {
+      console.log('ℹ️ Google Calendar not configured - skipping event deletion');
     }
 
     // 3. Alle Termine aus KV löschen

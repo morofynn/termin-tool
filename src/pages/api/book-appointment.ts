@@ -5,9 +5,14 @@ import { validateFormData } from '../../lib/validation';
 import { checkRateLimit, getClientIP } from '../../lib/rate-limit';
 import { DEFAULT_SETTINGS } from '../../lib/constants';
 import type { Appointment, Settings, DayKey } from '../../types/appointments';
-import { getEventDate, type EventDay } from '../../lib/event-config';
+import { getEventDateISO, type EventDay } from '../../lib/event-config';
 import { getLongLabel } from '../../lib/event-config';
 import { getAppointmentUrl } from '../../lib/url-utils';
+
+// ✅ NEW: Import Utils
+import { getSettings, saveAppointment, addToAppointmentsList, removeFromAppointmentsList, getAllAppointments } from '../../lib/kv-utils';
+import { reserveSlot, releaseSlot, isSlotAvailable } from '../../lib/slot-utils';
+import { createAppointmentDateTime } from '../../lib/date-utils';
 
 // Helper-Funktion für Day-Labels
 const DAY_NAMES_FULL: Record<DayKey, string> = {
@@ -40,12 +45,8 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
       );
     }
 
-    // Settings laden
-    const settingsData = await kv.get('settings');
-    const settings: Settings = settingsData ? JSON.parse(settingsData) : {
-      ...DEFAULT_SETTINGS,
-      rateLimitingEnabled: true, // Standard: AN
-    };
+    // ✅ MIGRATION: Settings laden mit Utility
+    const settings = await getSettings(kv);
 
     // RATE LIMITING CHECK
     const clientIP = getClientIP(request);
@@ -111,69 +112,56 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
       );
     }
 
-    // === DOPPELBUCHUNGSSCHUTZ (nur wenn aktiviert) ===
+    // ✅ MIGRATION: DOPPELBUCHUNGSSCHUTZ (mit Utility)
     if (settings.preventDuplicateEmail !== false) {
-      const allAppointmentsKey = 'appointments:list';
-      const existingList = await kv.get(allAppointmentsKey);
-      const appointmentsList: string[] = existingList ? JSON.parse(existingList) : [];
+      const allAppointments = await getAllAppointments(kv);
+      
+      const existingAppointment = allAppointments.find(
+        apt => apt.email.toLowerCase() === sanitizedData.email.toLowerCase() && apt.status !== 'cancelled'
+      );
+      
+      if (existingAppointment) {
+        await createAuditLog(
+          kv,
+          'Doppelbuchung verhindert',
+          `E-Mail ${sanitizedData.email} hat versucht, einen zweiten Termin zu buchen. Bestehender Termin: ${existingAppointment.id}. IP: ${clientIP}`,
+          existingAppointment.id,
+          sanitizedData.email
+        );
 
-      for (const aptId of appointmentsList) {
-        const aptData = await kv.get(`appointment:${aptId}`);
-        if (aptData) {
-          const apt: Appointment = JSON.parse(aptData);
-          if (apt.email.toLowerCase() === sanitizedData.email.toLowerCase() && 
-              apt.status !== 'cancelled') {
-            
-            // Audit Log für blockierte Doppelbuchung
-            await createAuditLog(
-              kv,
-              'Doppelbuchung verhindert',
-              `E-Mail ${sanitizedData.email} hat versucht, einen zweiten Termin zu buchen. Bestehender Termin: ${apt.id}. IP: ${clientIP}`,
-              apt.id,
-              sanitizedData.email
-            );
-
-            return new Response(
-              JSON.stringify({ 
-                message: 'Mit dieser E-Mail-Adresse wurde bereits ein Termin gebucht. Bitte verwenden Sie eine andere E-Mail-Adresse oder stornieren Sie Ihren bestehenden Termin.' 
-              }),
-              { status: 409, headers: { 'Content-Type': 'application/json' } }
-            );
-          }
-        }
+        return new Response(
+          JSON.stringify({ 
+            message: 'Mit dieser E-Mail-Adresse wurde bereits ein Termin gebucht. Bitte verwenden Sie eine andere E-Mail-Adresse oder stornieren Sie Ihren bestehenden Termin.' 
+          }),
+          { status: 409, headers: { 'Content-Type': 'application/json' } }
+        );
       }
     }
 
     // === DYNAMISCHES DATUM AUS SETTINGS VERWENDEN ===
-    const eventDate = getEventDate(day as EventDay, settings);
-    const appointmentDate = new Date(eventDate);
+    const eventDateISO = getEventDateISO(day as EventDay, settings);
     
-    // Zeit setzen
-    const [hours, minutes] = time.split(':').map(Number);
-    appointmentDate.setHours(hours, minutes, 0, 0);
+    // ✅ MIGRATION: DateTime mit Utility erstellen
+    const appointmentDateTimeStr = createAppointmentDateTime(eventDateISO, time);
+    const appointmentDate = new Date(appointmentDateTimeStr);
 
-    // Endzeit (30 Minuten später)
+    // Endzeit (aus Settings)
     const endDate = new Date(appointmentDate);
     endDate.setMinutes(appointmentDate.getMinutes() + (settings.appointmentDurationMinutes || 30));
 
-    // Prüfe verfügbare Plätze für diesen Slot
-    const slotKey = `slot:${day}:${time}:${appointmentDate.toISOString().split('T')[0]}`;
-    const existingSlotData = await kv.get(slotKey);
-    const slotAppointments: string[] = existingSlotData ? JSON.parse(existingSlotData) : [];
+    // ✅ FIX RACE CONDITION: Appointment ID JETZT generieren
+    const appointmentId = `apt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // ✅ FIX: Zentrale URL-Generierung mit ADMIN_BASE_URL
+    const appointmentUrl = getAppointmentUrl(appointmentId, locals?.runtime?.env, url.origin);
+    
+    const autoConfirm = settings.bookingMode === 'automatic';
 
-    // Zähle nur aktive Termine (nicht cancelled)
-    let activeBookingsCount = 0;
-    for (const aptId of slotAppointments) {
-      const aptData = await kv.get(`appointment:${aptId}`);
-      if (aptData) {
-        const apt: Appointment = JSON.parse(aptData);
-        if (apt.status !== 'cancelled') {
-          activeBookingsCount++;
-        }
-      }
-    }
+    // ✅ MIGRATION: Slot-Verfügbarkeit prüfen mit Utility
+    const dateKey = eventDateISO;
+    const slotAvailable = await isSlotAvailable(kv, day, time, dateKey, settings.maxAppointmentsPerSlot);
 
-    if (activeBookingsCount >= settings.maxAppointmentsPerSlot) {
+    if (!slotAvailable) {
       return new Response(
         JSON.stringify({ 
           message: 'Dieser Zeitslot ist leider bereits ausgebucht. Bitte wählen Sie einen anderen Zeitpunkt.' 
@@ -182,94 +170,17 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
       );
     }
 
-    // Google Calendar Konfiguration
-    const googleClientId = locals?.runtime?.env?.GOOGLE_CLIENT_ID || import.meta.env.GOOGLE_CLIENT_ID;
-    const googleClientSecret = locals?.runtime?.env?.GOOGLE_CLIENT_SECRET || import.meta.env.GOOGLE_CLIENT_SECRET;
-    const googleRefreshToken = locals?.runtime?.env?.GOOGLE_REFRESH_TOKEN || import.meta.env.GOOGLE_REFRESH_TOKEN;
-
-    let googleEventId = '';
-
-    // Appointment ID generieren
-    const appointmentId = `apt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    // ✅ Zentrale URL-Generierung mit ADMIN_BASE_URL
-    const appointmentUrl = getAppointmentUrl(appointmentId, locals?.runtime?.env, url.origin);
-
-    const autoConfirm = settings.bookingMode === 'automatic';
-
-    // Google Calendar Event erstellen (optional)
-    if (autoConfirm && googleClientId && googleClientSecret && googleRefreshToken) {
-      try {
-        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            client_id: googleClientId,
-            client_secret: googleClientSecret,
-            refresh_token: googleRefreshToken,
-            grant_type: 'refresh_token',
-          }),
-        });
-
-        if (tokenResponse.ok) {
-          const tokenData = await tokenResponse.json() as { access_token: string };
-          const calendarId = locals?.runtime?.env?.GOOGLE_CALENDAR_ID || import.meta.env.GOOGLE_CALENDAR_ID || 'primary';
-
-          const description = `
-Termin-Details:
-- Name: ${sanitizedData.name}
-${sanitizedData.company ? `- Betrieb: ${sanitizedData.company}` : ''}
-- Telefon: ${sanitizedData.phone}
-- E-Mail: ${sanitizedData.email}
-${sanitizedData.message ? `- Nachricht: ${sanitizedData.message}` : ''}
-
-Termin verwalten: ${appointmentUrl}
-          `.trim();
-
-          const event = {
-            summary: `Termin: ${sanitizedData.name}${sanitizedData.company ? ` (${sanitizedData.company})` : ''}`,
-            description,
-            start: {
-              dateTime: appointmentDate.toISOString(),
-              timeZone: 'Europe/Berlin',
-            },
-            end: {
-              dateTime: endDate.toISOString(),
-              timeZone: 'Europe/Berlin',
-            },
-            attendees: [{ email: sanitizedData.email, displayName: sanitizedData.name }],
-            reminders: {
-              useDefault: false,
-              overrides: [
-                { method: 'email', minutes: 24 * 60 },
-                { method: 'popup', minutes: 30 },
-              ],
-            },
-          };
-
-          const calendarResponse = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
-            {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${tokenData.access_token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(event),
-            }
-          );
-
-          if (calendarResponse.ok) {
-            const createdEvent = await calendarResponse.json() as { id: string };
-            googleEventId = createdEvent.id;
-          }
-        }
-      } catch (error) {
-        console.error('Google Calendar error:', error);
-      }
+    // ✅ MIGRATION: SOFORT Slot reservieren mit Utility
+    const slotReserved = await reserveSlot(kv, day, time, dateKey, appointmentId);
+    if (!slotReserved) {
+      console.error('Failed to reserve slot');
+      return new Response(
+        JSON.stringify({ message: 'Fehler beim Reservieren des Zeitslots' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Appointment Objekt erstellen
+    // Appointment Objekt erstellen (VORLÄUFIG ohne googleEventId)
     const appointment: Appointment = {
       id: appointmentId,
       day,
@@ -279,33 +190,117 @@ Termin verwalten: ${appointmentUrl}
       phone: sanitizedData.phone,
       email: sanitizedData.email,
       message: sanitizedData.message || undefined,
-      appointmentDate: appointmentDate.toISOString(),
-      googleEventId,
+      appointmentDate: appointmentDateTimeStr,
+      googleEventId: '', // Wird später gesetzt
       status: autoConfirm ? 'confirmed' : 'pending',
       createdAt: new Date().toISOString(),
     };
 
-    // Im KV Store speichern
+    // Google Calendar Konfiguration
+    const googleClientId = locals?.runtime?.env?.GOOGLE_CLIENT_ID || import.meta.env.GOOGLE_CLIENT_ID;
+    const googleClientSecret = locals?.runtime?.env?.GOOGLE_CLIENT_SECRET || import.meta.env.GOOGLE_CLIENT_SECRET;
+    const googleRefreshToken = locals?.runtime?.env?.GOOGLE_REFRESH_TOKEN || import.meta.env.GOOGLE_REFRESH_TOKEN;
+
+    let googleEventId = '';
+
+    // ✅ FIX #1: GESAMTER BUCHUNGSPROZESS IN EINEM TRY-BLOCK
     try {
-      // 1. Appointment speichern
-      await kv.put(
-        `appointment:${appointmentId}`,
-        JSON.stringify(appointment),
-        { expirationTtl: 60 * 60 * 24 * 90 }
-      );
+      // Google Calendar Event erstellen (optional, NACH Slot-Reservierung)
+      if (autoConfirm && googleClientId && googleClientSecret && googleRefreshToken) {
+        try {
+          const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              client_id: googleClientId,
+              client_secret: googleClientSecret,
+              refresh_token: googleRefreshToken,
+              grant_type: 'refresh_token',
+            }),
+          });
 
-      // 2. Slot-Index aktualisieren
-      slotAppointments.push(appointmentId);
-      await kv.put(slotKey, JSON.stringify(slotAppointments), { expirationTtl: 60 * 60 * 24 * 90 });
+          if (tokenResponse.ok) {
+            const tokenData = await tokenResponse.json() as { access_token: string };
+            const calendarId = locals?.runtime?.env?.GOOGLE_CALENDAR_ID || import.meta.env.GOOGLE_CALENDAR_ID || 'primary';
 
-      // 3. In Liste aller Appointments hinzufügen
-      const allAppointmentsKey = 'appointments:list';
-      const existingList = await kv.get(allAppointmentsKey);
-      const appointmentsList: string[] = existingList ? JSON.parse(existingList) : [];
-      appointmentsList.push(appointmentId);
-      await kv.put(allAppointmentsKey, JSON.stringify(appointmentsList), { expirationTtl: 60 * 60 * 24 * 90 });
+            const description = `
+Termin-Details:
+- Name: ${sanitizedData.name}
+${sanitizedData.company ? `- Betrieb: ${sanitizedData.company}` : ''}
+- Telefon: ${sanitizedData.phone}
+- E-Mail: ${sanitizedData.email}
+${sanitizedData.message ? `- Nachricht: ${sanitizedData.message}` : ''}
 
-      // 4. Audit Log erstellen
+Termin verwalten: ${appointmentUrl}
+            `.trim();
+
+            const event = {
+              summary: `Termin: ${sanitizedData.name}${sanitizedData.company ? ` (${sanitizedData.company})` : ''}`,
+              description,
+              start: {
+                dateTime: appointmentDate.toISOString(),
+                timeZone: 'Europe/Berlin',
+              },
+              end: {
+                dateTime: endDate.toISOString(),
+                timeZone: 'Europe/Berlin',
+              },
+              attendees: [{ email: sanitizedData.email, displayName: sanitizedData.name }],
+              reminders: {
+                useDefault: false,
+                overrides: [
+                  { method: 'popup', minutes: 30 },
+                ],
+              },
+            };
+
+            const calendarResponse = await fetch(
+              `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${tokenData.access_token}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(event),
+              }
+            );
+
+            if (calendarResponse.ok) {
+              const createdEvent = await calendarResponse.json() as { id: string };
+              googleEventId = createdEvent.id;
+              appointment.googleEventId = googleEventId;
+              console.log(`✅ Google Calendar event created: ${googleEventId}`);
+            } else {
+              console.error('❌ Google Calendar API error:', await calendarResponse.text());
+            }
+          }
+        } catch (error) {
+          console.error('❌ Google Calendar error:', error);
+          
+          // Audit Log für Calendar-Fehler (aber Buchung fortsetzen)
+          await createAuditLog(
+            kv,
+            '⚠️ Google Calendar Fehler',
+            `Fehler beim Erstellen des Calendar-Events für ${sanitizedData.name}: ${error instanceof Error ? error.message : 'Unbekannt'}`,
+            appointmentId,
+            'system'
+          );
+        }
+      }
+
+      // ✅ MIGRATION: Appointment speichern mit Utility
+      const saved = await saveAppointment(kv, appointment);
+      if (!saved) {
+        throw new Error('Failed to save appointment');
+      }
+      console.log(`✅ Appointment saved: ${appointmentId}`);
+
+      // ✅ MIGRATION: In Liste hinzufügen mit Utility
+      await addToAppointmentsList(kv, appointmentId);
+      console.log(`✅ Added to appointments:list`);
+
+      // Audit Log erstellen
       const actionText = autoConfirm ? "Termin gebucht" : "Terminanfrage eingegangen";
       const statusText = autoConfirm ? "bestätigt" : "ausstehend";
       await createAuditLog(
@@ -316,15 +311,13 @@ Termin verwalten: ${appointmentUrl}
         sanitizedData.email
       );
 
-
-      // 5. E-Mail-Benachrichtigungen senden
-      // ✅ FIX: Übergebe ISO-Datum statt formatierten Tag-Namen
+      // E-Mail-Benachrichtigungen senden
       const emailData = {
         name: sanitizedData.name,
         company: sanitizedData.company,
         phone: sanitizedData.phone,
         email: sanitizedData.email,
-        day: appointmentDate.toISOString().split('T')[0], // ✅ z.B. "2025-01-17"
+        day: eventDateISO,
         time,
         message: sanitizedData.message,
         appointmentUrl,
@@ -359,8 +352,10 @@ Termin verwalten: ${appointmentUrl}
         }
       } catch (emailError) {
         console.error('Error sending notifications:', emailError);
+        // Emails sind nicht kritisch - Buchung ist bereits gespeichert
       }
 
+      // Erfolgreiche Response
       return new Response(
         JSON.stringify({
           message: autoConfirm ? 'Termin erfolgreich gebucht' : 'Terminanfrage eingegangen',
@@ -374,43 +369,73 @@ Termin verwalten: ${appointmentUrl}
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
-    } catch (error) {
-      console.error('KV Store error:', error);
-      
-      // Cleanup Google Calendar Event bei Fehler
-      if (googleEventId && googleClientId && googleClientSecret && googleRefreshToken) {
-        try {
-          const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              client_id: googleClientId,
-              client_secret: googleClientSecret,
-              refresh_token: googleRefreshToken,
-              grant_type: 'refresh_token',
-            }),
-          });
 
-          if (tokenResponse.ok) {
-            const tokenData = await tokenResponse.json() as { access_token: string };
-            const calendarId = locals?.runtime?.env?.GOOGLE_CALENDAR_ID || import.meta.env.GOOGLE_CALENDAR_ID || 'primary';
-            
-            await fetch(
-              `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${googleEventId}`,
-              {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${tokenData.access_token}` },
-              }
-            );
+    } catch (error) {
+      // ✅ CLEANUP: Vollständiger Rollback bei Fehler
+      console.error('❌ Booking process error:', error);
+      
+      try {
+        console.log('⚠️ Starting cleanup after booking error...');
+        
+        // ✅ MIGRATION: Cleanup mit Utils
+        // 1. Slot freigeben
+        await releaseSlot(kv, day, time, dateKey, appointmentId);
+        
+        // 2. Aus Liste entfernen
+        await removeFromAppointmentsList(kv, appointmentId);
+        
+        // 3. Appointment löschen
+        await kv.delete(`appointment:${appointmentId}`);
+        
+        // 4. Google Calendar Event löschen (falls erstellt)
+        if (googleEventId && googleClientId && googleClientSecret && googleRefreshToken) {
+          try {
+            const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: new URLSearchParams({
+                client_id: googleClientId,
+                client_secret: googleClientSecret,
+                refresh_token: googleRefreshToken,
+                grant_type: 'refresh_token',
+              }),
+            });
+
+            if (tokenResponse.ok) {
+              const tokenData = await tokenResponse.json() as { access_token: string };
+              const calendarId = locals?.runtime?.env?.GOOGLE_CALENDAR_ID || import.meta.env.GOOGLE_CALENDAR_ID || 'primary';
+              
+              await fetch(
+                `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${googleEventId}`,
+                {
+                  method: 'DELETE',
+                  headers: { Authorization: `Bearer ${tokenData.access_token}` },
+                }
+              );
+              console.log(`✅ Google Calendar cleanup successful: ${googleEventId}`);
+            }
+          } catch (calError) {
+            console.error('❌ Failed to cleanup Google Calendar event:', calError);
           }
-        } catch (deleteError) {
-          console.error('Failed to cleanup Google Calendar event:', deleteError);
         }
+        
+        // 5. Audit Log für Fehler
+        await createAuditLog(
+          kv,
+          '❌ Buchungsfehler',
+          `Fehler beim Speichern des Termins für ${sanitizedData.name} (${sanitizedData.email}). Cleanup durchgeführt. IP: ${clientIP}`,
+          appointmentId,
+          sanitizedData.email
+        );
+        
+        console.log('✅ Cleanup completed successfully');
+      } catch (cleanupError) {
+        console.error('❌ Failed to cleanup after error:', cleanupError);
       }
 
       return new Response(
         JSON.stringify({ 
-          message: 'Fehler beim Speichern des Termins',
+          message: 'Fehler beim Speichern des Termins. Bitte versuchen Sie es erneut.',
           error: error instanceof Error ? error.message : 'Unknown error'
         }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }

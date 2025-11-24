@@ -3,14 +3,15 @@ import { createAuditLog } from './audit-log';
 import { DEFAULT_SETTINGS } from '../../../lib/constants';
 import type { Settings } from '../../../types/appointments';
 
-const SETTINGS_KEY = 'settings';
+// ✅ MIGRATION: Import Utils
+import { getSettings, saveSettings } from '../../../lib/kv-utils';
 
 // Hilfsfunktion: Settings normalisieren und mit Defaults füllen
 function normalizeSettings(settings: Partial<Settings>): Settings {
   return {
     ...DEFAULT_SETTINGS,
     ...settings,
-    // Sync zwischen alten und neuen Feldnamen
+    // ✅ FIX #13: Sync zwischen alten und neuen Feldnamen
     maxBookingsPerSlot: settings.maxBookingsPerSlot ?? settings.maxAppointmentsPerSlot ?? DEFAULT_SETTINGS.maxAppointmentsPerSlot,
     maxAppointmentsPerSlot: settings.maxAppointmentsPerSlot ?? settings.maxBookingsPerSlot ?? DEFAULT_SETTINGS.maxAppointmentsPerSlot,
     autoConfirm: settings.autoConfirm ?? (settings.bookingMode === 'automatic'),
@@ -187,18 +188,8 @@ export const GET: APIRoute = async ({ locals }) => {
   }
 
   try {
-    const settingsData = await KV.get(SETTINGS_KEY);
-    
-    let settings: Settings;
-    
-    if (settingsData) {
-      const rawSettings = JSON.parse(settingsData);
-      settings = normalizeSettings(rawSettings);
-    } else {
-      // Erste Anfrage - speichere Defaults
-      settings = normalizeSettings({});
-      await KV.put(SETTINGS_KEY, JSON.stringify(settings));
-    }
+    // ✅ MIGRATION: Verwende getSettings() Utility (inkl. Normalisierung)
+    const settings = await getSettings(KV);
     
     return new Response(JSON.stringify({ settings }), {
       status: 200,
@@ -300,15 +291,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
     }
 
-    // Alte Settings laden für Audit Log
-    const oldSettingsData = await KV.get(SETTINGS_KEY);
-    const oldSettings: Settings = oldSettingsData ? normalizeSettings(JSON.parse(oldSettingsData)) : normalizeSettings({});
+    // ✅ MIGRATION: Alte Settings für Audit Log laden
+    const oldSettings = await getSettings(KV);
 
     // Änderungen ermitteln
     const changes = getSettingsChanges(oldSettings, settings);
 
-    // Speichern
-    await KV.put(SETTINGS_KEY, JSON.stringify(settings));
+    // ✅ MIGRATION: Verwende saveSettings() Utility
+    await saveSettings(KV, settings);
 
     // Audit Log erstellen, wenn es Änderungen gab
     if (changes.length > 0) {

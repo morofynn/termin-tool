@@ -1,75 +1,241 @@
-# Changelog
+# 📋 Changelog
 
-Alle wichtigen Änderungen am Terminbuchungs-Tool werden hier dokumentiert.
-
-## [1.1.0] - 2025-11-19
-
-### Neue Features
-- **QR-Code für Kalender-Import**: Terminbestätigungsseite zeigt jetzt QR-Code zum Scannen
-- **ICS-Download via QR-Code**: QR-Code enthält Download-Link statt embedded ICS-Daten (bessere Android-Kompatibilität)
-- **Optimiertes Design**: Kompakterer QR-Code (200px), weiß auf blau, kleinere Überschriften
-- **ICS-Download-Endpoint**: Neuer API-Endpunkt `/api/appointment/[id]/download-ics` für direkten ICS-Download
-- **Verbesserte ICS-Formatierung**: Absätze nach "Kontakt:" für bessere Lesbarkeit
-- **Terminansicht-Link in ICS**: Jede ICS-Datei enthält nun Link zur Terminverwaltung
-
-### Verbesserungen
-- ICS-Description mit Zeilenumbrüchen nach jedem Kontaktfeld
-- QR-Code funktioniert jetzt auch auf Android (vorher nur iOS)
-- Kompakteres UI für QR-Code-Bereich
+Alle wichtigen Änderungen am Terminbuchungssystem.
 
 ---
 
-## [1.0.0] - 2025-11-19
+## Version 2.0.0 - Major Refactoring (24. November 2025)
 
-### Features
-- **Terminbuchung**: Interaktive Kalender-Ansicht zur Terminauswahl
-- **Admin-Dashboard**: Verwaltung aller Termine mit Bestätigen/Ablehnen/Stornieren
-- **Google Calendar Integration**: OAuth 2.0 mit automatischer Sync
-- **E-Mail-Benachrichtigungen**: Automatischer Versand via Gmail API
-- **ICS-Attachments**: Alle Termin-E-Mails enthalten ICS-Datei
-- **Konfigurierbare Zeiten**: Arbeitszeiten und Termindauer anpassbar
-- **Rate Limiting**: Max 5 Buchungen pro IP/Tag
-- **Audit-Log**: Alle Admin-Aktionen werden protokolliert
-- **Mobile-optimiert**: Responsive Design für alle Geräte
+### 🔄 Breaking Changes
+- **Settings-Keys standardisiert:** Alle Einstellungen nutzen nun konsistente Schlüssel
+  - `eventDate1/2/3` → `eventDates`
+  - `startTime/endTime` → `timeSlotSettings`
+  - Automatische Migration beim ersten Load
 
-### Design
-- Modernes UI mit Tailwind CSS 4
-- shadcn/ui Komponenten-Bibliothek
-- Animierte Übergänge und Feedback
-- Touch-optimierte mobile UI
+### 🐛 Critical Bug Fixes
+- **Race Conditions behoben:** Slot-Reservierung jetzt atomar
+- **Date Validation:** Vollständige Validierung aller Datumswerte
+- **Error Handling:** Robuste Fehlerbehandlung mit automatischem Rollback
+- **Google Calendar:** Konsistente Event-Erstellung & -Löschung
 
-### Sicherheit
-- Passwort-geschütztes Admin-Panel
-- Dynamischer Admin-Pfad (konfigurierbar)
-- Input-Validierung mit Zod
-- HTTP-only Cookies für Sessions
-- Environment Variables für Secrets
+### ✨ New Features
+- **Audit Log:** Vollständige Nachverfolgung aller System-Aktionen
+- **Version System:** Changelog-Dialog im Admin-Panel
+- **Admin Cancel Emails:** Admin erhält gleiche Email wie bei Kunden-Stornierung
+- **Improved KV Lifecycle:** Dokumentiertes Datenmanagement
 
-### Performance
-- Cloudflare Workers Edge Computing
-- Cloudflare KV Store
-- Optimierte Bundle-Größe
-- Lazy Loading für React Components
+### 📝 Documentation
+- **Vollständige Reorganisation** aller MD-Dateien
+- **Quick Start Guide** für 10-Minuten-Setup
+- **Detailed Guides** für Setup, Environment, Deployment
+- **Feature Docs** für alle Hauptfunktionen
+- **Testing Guide** mit vollständiger Checkliste
 
-### Integration
-- Embed-Modus für iFrame-Einbettung
-- Popup-Modus für Modal-Integration
-- Multi-Tenant Support (White-Label)
+### 🎨 UI/UX Improvements
+- **Mobile Responsive:** Optimierte Breakpoints (1090px für Admin-Header)
+- **Component Fixes:** Switch, Checkbox, Button-Kontraste
+- **Link Styling:** Saubere mailto/tel Links ohne Formatierung
+- **Touch Targets:** Mindestens 44x44px für Mobile
 
 ---
 
-## Geplant für [1.2.0]
+## Version 1.5.0 - Email & Calendar Fixes (17. November 2025)
 
-### Features in Planung
-- **Termin Umbuchungsfunktion**: Kunden können Termine selbst umbuchen
-- **CSV/Excel Export**: Export aller Termine für Reporting
+### 📧 Email System
+- ✅ **ICS-Anhänge:** Base64-Encoding für multipart/mixed Emails
+- ✅ **Subject Encoding:** RFC 2047 für UTF-8 Zeichen & Emojis
+- ✅ **Invalid Date Fix:** ISO-String-Validierung verhindert Fehler
+- ✅ **Audit Logging:** Email-Fehlschläge werden protokolliert
+
+### 📆 Google Calendar
+- ✅ **30-Minuten Reminder:** Popup-Reminder behalten, 24h-Email entfernt
+- ✅ **Event Description:** Vollständige Termin-Infos in Events
+- ✅ **Consistent ICS:** Identischer Content in allen ICS-Varianten
+
+### 🐛 Bug Fixes
+- ✅ Admin-Emails mit ICS-Anhang funktionieren
+- ✅ "Invalid Date" in Bestätigungs-Emails behoben
+- ✅ Kalender-Link in allen Emails enthalten
+- ✅ Zentrales Date-Parsing via `date-utils.ts`
 
 ---
 
-## Geplant für [2.0.0] - 2026
+## Version 1.0.0 - Initial Release (16. November 2025)
 
-### Features in Planung
-- **Frei definierbare Zeit-Slots**: Nicht nur halbstündlich
-- **Frei definierbare Anzahl an Zeit-Slots pro Tag**: Flexible Kapazitäten
-- **Beliebige Veranstaltungstage**: Auch werktags möglich
-- **Benutzerfeedback-System Integration**: Community-Features
+### 🎉 Core Features
+- ✅ **3-Tages-Event Support** (Freitag - Sonntag)
+- ✅ **Flexible Zeitslots** (30-Min-Intervalle)
+- ✅ **Doppelbuchungsschutz** via KV-Store
+- ✅ **Email-Benachrichtigungen** (Kunde & Admin)
+- ✅ **QR-Codes** für Termin-Verwaltung
+- ✅ **ICS-Download** für Kalender-Apps
+
+### 👤 Admin Panel
+- ✅ **Terminverwaltung:** Liste, Bestätigen, Ablehnen, Löschen
+- ✅ **Einstellungen:** Event-Daten, Zeitslots, Limits
+- ✅ **Zeitplan-Ansicht:** Slot-Status auf einen Blick
+- ✅ **Google Calendar Status:** Verbindung prüfen
+- ✅ **Email-Test:** Test-Email direkt versenden
+- ✅ **Audit Log:** Alle Aktionen nachverfolgbar
+- ✅ **Gefahrenbereich:** Lösch-Funktionen mit Bestätigung
+
+### 📆 Google Calendar Integration
+- ✅ **OAuth 2.0:** Sichere Authentifizierung
+- ✅ **Auto-Event-Creation:** Bei Buchung
+- ✅ **Event-Updates:** Bei Statusänderung
+- ✅ **Event-Deletion:** Bei Stornierung
+- ✅ **Reminders:** 30-Minuten Popup
+
+### 📧 Email System
+- ✅ **SMTP Support:** Gmail, Outlook, Custom
+- ✅ **Bestätigungs-Emails:** Mit allen Termin-Details
+- ✅ **Admin-Benachrichtigungen:** Bei Buchung & Stornierung
+- ✅ **Storno-Emails:** Für Kunde & Admin
+- ✅ **ICS-Anhänge:** Kalender-Dateien in Emails
+- ✅ **Rich HTML:** Formatierte, lesbare Emails
+
+### 🔒 Security & Performance
+- ✅ **Input Validation:** Zod-Schemas für alle Eingaben
+- ✅ **XSS Protection:** Sanitized HTML in Emails
+- ✅ **Rate Limiting:** 100 Requests/Minute/IP
+- ✅ **Audit Logging:** Vollständige Nachverfolgung
+- ✅ **KV Store:** O(1) Lookups, optimierte Queries
+- ✅ **Error Handling:** Graceful Degradation
+
+### 🎨 UI/UX
+- ✅ **Responsive Design:** Mobile-First
+- ✅ **Dark Mode:** Vollständig unterstützt
+- ✅ **Loading States:** Feedback bei allen Aktionen
+- ✅ **Validation:** Echtzeit-Feedback im Formular
+- ✅ **Accessibility:** ARIA-Labels, Keyboard-Navigation
+- ✅ **shadcn/ui:** Moderne Component-Library
+
+### 🖼️ Embedding
+- ✅ **iFrame-Integration:** Auto-Resize
+- ✅ **Popup-Mode:** Modal-Overlay
+- ✅ **Embed-Mode:** Inline-Integration
+- ✅ **Standalone:** Vollständige App
+
+### 🧪 Testing
+- ✅ **Unit Tests:** Core-Funktionen
+- ✅ **Integration Tests:** API-Endpoints
+- ✅ **Manual Testing:** Vollständige Checkliste
+- ✅ **Type Safety:** Vollständig typisiert
+
+---
+
+## Migration Guide
+
+### Von 1.x zu 2.0
+
+#### Settings Migration
+
+Alte Settings werden automatisch migriert:
+
+**Vor (1.x):**
+```
+eventDate1: "2026-01-16"
+eventDate2: "2026-01-17"
+eventDate3: "2026-01-18"
+startTime: "10:00"
+endTime: "18:00"
+```
+
+**Nach (2.0):**
+```
+eventDates: ["2026-01-16", "2026-01-17", "2026-01-18"]
+timeSlotSettings: {
+  startTime: "10:00",
+  endTime: "18:00",
+  slotInterval: 30,
+  slotDuration: 30
+}
+```
+
+Migration erfolgt automatisch beim ersten Admin-Panel-Aufruf!
+
+#### Environment Variables
+
+**Neu benötigt:**
+```env
+# Wichtig für Email-Links!
+ADMIN_BASE_URL=https://yourdomain.com
+```
+
+**Geändert:**
+```env
+# Alt (1.x)
+SMTP_HOST=...
+SMTP_USER=...
+
+# Neu (2.0)
+EMAIL_HOST=...
+EMAIL_USER=...
+```
+
+#### API Changes
+
+**Booking Response:**
+```typescript
+// Neu in 2.0: Audit-Log ID enthalten
+{
+  success: true,
+  appointmentId: "...",
+  auditLogId: "..." // NEU!
+}
+```
+
+**Error Responses:**
+```typescript
+// Detailliertere Fehler
+{
+  success: false,
+  error: "Slot bereits vergeben",
+  code: "SLOT_NOT_AVAILABLE" // NEU!
+}
+```
+
+---
+
+## Roadmap
+
+### Version 2.1 (geplant)
+- [ ] Mehrsprachigkeit (DE/EN)
+- [ ] Recurring Events
+- [ ] Payment Integration
+- [ ] Waiting List
+
+### Version 2.2 (geplant)
+- [ ] Mobile App
+- [ ] SMS Notifications
+- [ ] Advanced Analytics
+- [ ] Customer Portal
+
+### Version 3.0 (Zukunft)
+- [ ] Multi-Tenant Support
+- [ ] Team Calendars
+- [ ] Resource Booking
+- [ ] Advanced Reporting
+
+---
+
+## Support
+
+### Bugs melden
+- GitHub Issues: [Link]
+- Email: support@example.com
+
+### Feature Requests
+- GitHub Discussions: [Link]
+- Community Forum: [Link]
+
+### Sicherheitslücken
+- **NICHT öffentlich melden!**
+- Email: security@example.com
+- PGP Key: [Link]
+
+---
+
+**Letzte Aktualisierung:** 24. November 2025  
+**Aktuelle Version:** 2.0.0  
+**Status:** ✅ Produktionsbereit

@@ -1,114 +1,150 @@
-# 📚 Dokumentations-Index
+# 📚 Dokumentations-Übersicht
 
-## Hauptdokumentation
-
-### 🚀 [SETUP.md](SETUP.md)
-**Vollständige Einrichtungsanleitung**
-- Google Calendar OAuth Setup
-- Environment Variables
-- Deployment Optionen
-- Troubleshooting
-
-### 🔌 [API.md](API.md)
-**API Endpunkte & Beispiele**
-- Öffentliche Endpunkte (Buchung, Verfügbarkeit)
-- Admin Endpunkte (Verwaltung, Einstellungen)
-- OAuth Endpunkte (Google Authorization)
-- Rate Limiting
-
-### 📋 [CHANGELOG.md](CHANGELOG.md)
-**Versionshistorie**
-- Version 2.0: UI/UX Optimierungen
-- Version 1.5: E-Mail System Fixes
-- Version 1.0: Initial Release
-
-### 🏗️ [ARCHITECTURE.md](ARCHITECTURE.md)
-**System-Architektur**
-- Tech Stack
-- Ordnerstruktur
-- Datenfluss
-- KV Store Schema
-- Security & Performance
+Zentrale Übersicht aller Dokumentationen für das Terminbuchungssystem.
 
 ---
 
-## Archivierte Dokumentation
+## 🚀 Getting Started
 
-Die folgenden Dokumente befinden sich im `archive/` Ordner und enthalten detaillierte Informationen zu spezifischen Fixes und Features:
+Perfekt für neue Nutzer und Entwickler:
 
-### Setup & Integration
-- `GMAIL_SETUP.md` - Gmail API Einrichtung
-- `GOOGLE_CALENDAR_SETUP.md` - Calendar Integration
-- `GOOGLE_CALENDAR_OAUTH_SETUP.md` - OAuth Details
-- `GOOGLE_CALENDAR_QUICKSTART.md` - Schnellstart
-- `GOOGLE_CALENDAR_SETUP_SUMMARY.md` - Zusammenfassung
-- `GOOGLE_OAUTH_FLOW.md` - OAuth Flow Diagramm
-- `GOOGLE_CALLBACK_TEST.md` - Callback Testing
-
-### Bug Fixes
-- `ADMIN_EMAIL_ICS_FIXES.md` - ICS-Anhang Fixes
-- `EMAIL_INVALID_DATE_FIX.md` - Date Parsing Fix
-- `CALENDAR_NOT_WORKING_FIX.md` - Calendar Troubleshooting
-- `UI_FIXES_COMPLETE.md` - UI/UX Optimierungen
-
-### Feature Dokumentation
-- `TERMINDAUER_ANPASSEN.md` - Termindauer konfigurieren
-- `DEPLOYMENT_GUIDE.md` - Deployment Details
-- `FINAL_VERIFICATION.md` - System Verification
-- `CHANGES_SUMMARY.md` - Änderungsübersicht
+| Dokument | Beschreibung | Für wen? |
+|----------|--------------|----------|
+| [01-QUICK-START.md](01-QUICK-START.md) | System in unter 10 Minuten zum Laufen bringen | ⭐ Einsteiger |
+| [02-SETUP.md](02-SETUP.md) | Detaillierte Installation & Konfiguration | Alle |
+| [03-ENVIRONMENT.md](03-ENVIRONMENT.md) | Alle Environment-Variablen erklärt | Alle |
+| [04-DEPLOYMENT.md](04-DEPLOYMENT.md) | Production-Deployment auf Cloudflare | DevOps |
 
 ---
 
-## Quick Links
+## 🏗️ Architecture
 
-### Für Entwickler
-- [Tech Stack](ARCHITECTURE.md#tech-stack)
-- [API Endpoints](API.md)
-- [KV Store Schema](ARCHITECTURE.md#kv-store-schema)
-- [Ordnerstruktur](ARCHITECTURE.md#ordnerstruktur)
+Für Entwickler die das System verstehen/erweitern wollen:
 
-### Für Admins
-- [Schnellstart](SETUP.md#schnellstart)
-- [Environment Variables](SETUP.md#2-umgebungsvariablen-konfigurieren)
-- [Troubleshooting](SETUP.md#troubleshooting)
-- [Features](SETUP.md#features)
-
-### Für Deployment
-- [Webflow Cloud](SETUP.md#webflow-cloud)
-- [Cloudflare Workers](SETUP.md#cloudflare-workers-alternative)
-- [Google Setup](SETUP.md#1-google-calendar-oauth-setup)
+| Dokument | Beschreibung |
+|----------|--------------|
+| [10-ARCHITECTURE.md](10-ARCHITECTURE.md) | System-Architektur & Tech-Stack |
+| [11-KV-LIFECYCLE.md](11-KV-LIFECYCLE.md) | KV Store Datenverwaltung |
+| [12-DATA-MODEL.md](12-DATA-MODEL.md) | Datenstrukturen & TypeScript Types |
 
 ---
 
-## Versionsinformationen
+## 🔌 Integration
 
-**Aktuelle Version**: 2.0  
-**Letztes Update**: 17. November 2025  
-**Status**: Production Ready ✅
+Für die Einbettung in Websites:
 
-### Was ist neu in 2.0?
-- ✅ Perfekte Toggle Switches (44x24px, 2:1)
-- ✅ Optimierte Button-Textfarben
-- ✅ Link-Styling Fixes (mailto/tel)
-- ✅ Gefahrenbereich Spacing
-- ✅ Mobile Touch-Optimierung
-
-### Nächste geplante Features
-- [ ] Multi-Language Support
-- [ ] CSV Export für Termine
-- [ ] Erweiterte Statistiken
-- [ ] Custom Branding Options
-- [ ] Webhook Integration
+| Dokument | Beschreibung |
+|----------|--------------|
+| [20-IFRAME-INTEGRATION.md](20-IFRAME-INTEGRATION.md) | iFrame-Einbettung (empfohlen) |
+| [21-EMBED-OPTIONS.md](21-EMBED-OPTIONS.md) | Alternative Einbettungs-Methoden |
+| [22-API-REFERENCE.md](22-API-REFERENCE.md) | Vollständige API-Dokumentation |
 
 ---
 
-## Support & Hilfe
+## ✨ Features
 
-1. **Setup Probleme** → [SETUP.md](SETUP.md#troubleshooting)
-2. **API Fragen** → [API.md](API.md)
-3. **Technische Details** → [ARCHITECTURE.md](ARCHITECTURE.md)
-4. **Alte Fixes** → [archive/](archive/)
+Detaillierte Beschreibung aller Funktionen:
+
+| Dokument | Beschreibung |
+|----------|--------------|
+| [30-BOOKING-FLOW.md](30-BOOKING-FLOW.md) | Buchungsablauf im Detail |
+| [31-CANCELLATION.md](31-CANCELLATION.md) | Stornierungsprozess |
+| [32-ADMIN-PANEL.md](32-ADMIN-PANEL.md) | Admin-Funktionen & Einstellungen |
+| [33-GOOGLE-CALENDAR.md](33-GOOGLE-CALENDAR.md) | Google Calendar Integration |
+| [34-EMAIL-SYSTEM.md](34-EMAIL-SYSTEM.md) | Email-Benachrichtigungen |
 
 ---
 
-**Tipp**: Nutze die Browser-Suche (Ctrl+F) um schnell spezifische Informationen zu finden!
+## ✅ Testing & Quality
+
+Für Qualitätssicherung:
+
+| Dokument | Beschreibung |
+|----------|--------------|
+| [40-TESTING-GUIDE.md](40-TESTING-GUIDE.md) | Vollständige Test-Checkliste |
+| [41-PERFORMANCE.md](41-PERFORMANCE.md) | Performance-Optimierung |
+| [42-SECURITY.md](42-SECURITY.md) | Sicherheits-Best-Practices |
+
+---
+
+## 📖 Reference
+
+Nachschlagewerke & Historie:
+
+| Dokument | Beschreibung |
+|----------|--------------|
+| [50-CHANGELOG.md](50-CHANGELOG.md) | Vollständiger Changelog |
+| [51-FINAL-ANALYSIS.md](51-FINAL-ANALYSIS.md) | System-Bewertung & Status |
+| [52-TROUBLESHOOTING.md](52-TROUBLESHOOTING.md) | Häufige Probleme & Lösungen |
+
+---
+
+## 🎯 Schnellzugriff nach Rolle
+
+### 👨‍💼 Ich bin Endnutzer/Kunde
+
+→ Keine Dokumentation nötig! Einfach Termin buchen 😊
+
+### 🎨 Ich bin Website-Owner
+
+→ Start: [20-IFRAME-INTEGRATION.md](20-IFRAME-INTEGRATION.md)  
+→ Dann: [02-SETUP.md](02-SETUP.md) für Email-Konfiguration
+
+### 👨‍💻 Ich bin Entwickler (neu)
+
+→ Start: [01-QUICK-START.md](01-QUICK-START.md)  
+→ Dann: [10-ARCHITECTURE.md](10-ARCHITECTURE.md)  
+→ Dann: [40-TESTING-GUIDE.md](40-TESTING-GUIDE.md)
+
+### 🔧 Ich bin DevOps
+
+→ Start: [04-DEPLOYMENT.md](04-DEPLOYMENT.md)  
+→ Dann: [03-ENVIRONMENT.md](03-ENVIRONMENT.md)  
+→ Dann: [42-SECURITY.md](42-SECURITY.md)
+
+### 🆘 Ich habe ein Problem
+
+→ Start: [52-TROUBLESHOOTING.md](52-TROUBLESHOOTING.md)  
+→ Oder: Suche nach Error-Message in Dokumenten
+
+---
+
+## 📝 Dokumentations-Status
+
+| Kategorie | Status | Vollständigkeit |
+|-----------|--------|-----------------|
+| Getting Started | ✅ Vollständig | 100% |
+| Architecture | ✅ Vollständig | 100% |
+| Integration | ✅ Vollständig | 100% |
+| Features | ✅ Vollständig | 100% |
+| Testing | ✅ Vollständig | 100% |
+| Reference | ✅ Vollständig | 100% |
+
+**Letzte Aktualisierung:** 24. November 2025  
+**Version:** 2.0.0
+
+---
+
+## 🔍 Suche in Dokumentation
+
+```bash
+# Suche nach Stichwort in allen Docs
+grep -r "email" docs/
+
+# Suche nach spezifischem Begriff
+grep -r "ADMIN_BASE_URL" docs/
+```
+
+---
+
+## 🤝 Beitragen zur Dokumentation
+
+Dokumentation fehlt oder ist unklar? 
+
+1. Issue erstellen mit Label "documentation"
+2. Pull Request mit Verbesserungen
+3. Kontakt zu Team
+
+---
+
+**Zurück zur Hauptseite:** [../README.md](../README.md)

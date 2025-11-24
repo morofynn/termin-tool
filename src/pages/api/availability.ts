@@ -1,6 +1,10 @@
 import type { APIRoute } from 'astro';
 import { EVENT_CONFIG, type EventDay, getEventDateISO } from '../../lib/event-config';
 
+// ✅ MIGRATION: Import Utils
+import { getSettings, getAppointment } from '../../lib/kv-utils';
+import { getSlotBookings } from '../../lib/slot-utils';
+
 type DayKey = EventDay;
 
 interface SlotAvailability {
@@ -10,26 +14,6 @@ interface SlotAvailability {
   };
 }
 
-interface Appointment {
-  id: string;
-  day: string;
-  time: string;
-  appointmentDate: string;
-  status: string;
-}
-
-interface AppSettings {
-  maxBookingsPerSlot: number;
-  availableDays: {
-    friday: boolean;
-    saturday: boolean;
-    sunday: boolean;
-  };
-  preventDuplicateEmail: boolean;
-  maintenanceMode: boolean;
-  [key: string]: any;
-}
-
 const DEFAULT_MAX_BOOKINGS = 2;
 
 const DEFAULT_AVAILABLE_DAYS = {
@@ -37,8 +21,6 @@ const DEFAULT_AVAILABLE_DAYS = {
   saturday: true,
   sunday: true,
 };
-
-
 
 // Zeitslots Definition - muss mit AppointmentScheduler übereinstimmen
 const TIME_SLOTS = {
@@ -65,32 +47,20 @@ export const GET: APIRoute = async ({ locals }) => {
     const kv = locals.runtime?.env?.APPOINTMENTS_KV;
     if (!kv) {
       console.error('KV namespace not available');
-      // Return empty availability if not configured
       return new Response(
         JSON.stringify({}),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Lade Einstellungen
-    let maxBookingsPerSlot = DEFAULT_MAX_BOOKINGS;
-    let availableDays = DEFAULT_AVAILABLE_DAYS;
-    let maintenanceMode = false;
-    let settings: AppSettings | undefined;
+    // ✅ MIGRATION: Verwende getSettings() Utility
+    const settings = await getSettings(kv);
     
-    try {
-      const settingsData = await kv.get('settings'); // Korrekter Key
-      if (settingsData) {
-        settings = JSON.parse(settingsData);
-        maxBookingsPerSlot = settings.maxBookingsPerSlot || DEFAULT_MAX_BOOKINGS;
-        availableDays = settings.availableDays || DEFAULT_AVAILABLE_DAYS;
-        maintenanceMode = settings.maintenanceMode || false;
-      }
-    } catch (error) {
-      console.error('Error loading settings, using defaults:', error);
-    }
+    const maxAppointmentsPerSlot = settings.maxAppointmentsPerSlot || DEFAULT_MAX_BOOKINGS;
+    const availableDays = settings.availableDays || DEFAULT_AVAILABLE_DAYS;
+    const maintenanceMode = settings.maintenanceMode || false;
 
-    console.log(`Settings - maxBookings: ${maxBookingsPerSlot}, availableDays:`, availableDays, `maintenanceMode: ${maintenanceMode}`);
+    console.log(`Settings - maxAppointmentsPerSlot: ${maxAppointmentsPerSlot}, availableDays:`, availableDays, `maintenanceMode: ${maintenanceMode}`);
 
     // Wenn Wartungsmodus aktiv, alle Slots als nicht verfügbar zurückgeben
     if (maintenanceMode) {
@@ -131,23 +101,19 @@ export const GET: APIRoute = async ({ locals }) => {
       
       for (const time of slots) {
         const eventDate = getEventDateISO(day, settings);
-        const slotKey = `slot:${day}:${time}:${eventDate}`;
         const responseKey = `${day}-${time}`;
         
         try {
-          const slotData = await kv.get(slotKey);
-          if (slotData) {
-            const appointmentIds: string[] = JSON.parse(slotData);
-            
+          // ✅ MIGRATION: Verwende getSlotBookings() Utility
+          const appointmentIds = await getSlotBookings(kv, day, time, eventDate);
+          
+          if (appointmentIds.length > 0) {
             // Zähle nur aktive Termine (nicht cancelled)
             let activeCount = 0;
             for (const aptId of appointmentIds) {
-              const aptData = await kv.get(`appointment:${aptId}`);
-              if (aptData) {
-                const apt: Appointment = JSON.parse(aptData);
-                if (apt.status !== 'cancelled') {
-                  activeCount++;
-                }
+              const apt = await getAppointment(kv, aptId);
+              if (apt && apt.status !== 'cancelled') {
+                activeCount++;
               }
             }
             
@@ -156,13 +122,13 @@ export const GET: APIRoute = async ({ locals }) => {
             
             // Aktualisiere Verfügbarkeit: nur verfügbar wenn Tag aktiviert UND noch Plätze frei
             if (availableDays[day]) {
-              availability[responseKey].available = activeCount < maxBookingsPerSlot;
+              availability[responseKey].available = activeCount < maxAppointmentsPerSlot;
             } else {
               availability[responseKey].available = false;
             }
           }
         } catch (error) {
-          console.error(`Error reading slot ${slotKey}:`, error);
+          console.error(`Error reading slot ${day}:${time}:${eventDate}:`, error);
         }
       }
     }

@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { getAppointment } from '../../../lib/kv-utils';
 
 interface Appointment {
   id: string;
@@ -13,6 +14,9 @@ interface Appointment {
   googleEventId?: string;
   status: 'confirmed' | 'cancelled' | 'pending';
   createdAt: string;
+  updatedAt?: string;
+  startTime?: string;
+  endTime?: string;
 }
 
 export const GET: APIRoute = async ({ params, locals }) => {
@@ -36,16 +40,14 @@ export const GET: APIRoute = async ({ params, locals }) => {
       );
     }
 
-    // Appointment laden
-    const appointmentData = await kv.get(`appointment:${id}`);
-    if (!appointmentData) {
+    // ✅ Verwende getAppointment() aus kv-utils
+    const appointment = await getAppointment(kv, id);
+    if (!appointment) {
       return new Response(
         JSON.stringify({ message: 'Termin nicht gefunden' }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
-
-    const appointment: Appointment = JSON.parse(appointmentData);
 
     return new Response(JSON.stringify(appointment), {
       status: 200,

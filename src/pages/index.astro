@@ -58,7 +58,7 @@ console.log('✅ Im iFrame erkannt - starte Auto-Resize');
 // Markiere HTML für iFrame-spezifische Styles
 document.documentElement.classList.add('in-iframe');
 
-let resizeTimeout = null;
+let resizeTimeout: number | null = null;
 
 function getActualHeight() {
 // Finde den App-Container (das ist unser Content)

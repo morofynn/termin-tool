@@ -5,6 +5,9 @@ import { getShortLabel, getLongLabel } from '../../../../lib/event-config';
 import { DAY_NAMES } from '../../../../lib/constants';
 import type { Appointment, Settings, DayKey } from '../../../../types/appointments';
 import { getAppointmentUrl } from '../../../../lib/url-utils';
+import { getSettings, getAppointment, updateAppointment } from '../../../../lib/kv-utils';
+import { releaseSlot } from '../../../../lib/slot-utils';
+import { validateAndParseBerlinDate } from '../../../../lib/date-utils';
 
 // Helper-Funktionen für Full Day-Labels
 const DAY_NAMES_FULL: Record<DayKey, string> = {
@@ -35,16 +38,24 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
       );
     }
 
-    // Appointment laden
-    const appointmentData = await kv.get(`appointment:${id}`);
-    if (!appointmentData) {
+    // ✅ Verwende getAppointment() aus kv-utils
+    const appointment = await getAppointment(kv, id);
+    if (!appointment) {
       return new Response(
         JSON.stringify({ message: 'Termin nicht gefunden' }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
-
-    const appointment: Appointment = JSON.parse(appointmentData);
+    
+    // ✅ Validiere appointmentDate mit date-utils
+    const appointmentDate = validateAndParseBerlinDate(appointment.appointmentDate);
+    if (!appointmentDate) {
+      console.error(`Invalid appointmentDate for appointment ${id}: ${appointment.appointmentDate}`);
+      return new Response(
+        JSON.stringify({ message: 'Ungültiges Termin-Datum' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Google Calendar Event löschen (falls vorhanden)
     if (appointment.googleEventId) {
@@ -79,7 +90,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
               }
             );
 
-            console.log('Google Calendar event deleted:', appointment.googleEventId);
+            console.log('✅ Google Calendar event deleted:', appointment.googleEventId);
           }
         } catch (error) {
           console.error('Failed to delete Google Calendar event:', error);
@@ -88,57 +99,42 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
       }
     }
 
-    // Settings laden für Email
-    const settingsData = await kv.get('settings');
-    const settings: Settings = settingsData ? JSON.parse(settingsData) : {
-      companyName: 'Ihre Firma',
-      companyAddress: 'Musterstraße 1, 12345 Musterstadt',
-      companyPhone: '+49 123 456789',
-      companyEmail: 'kontakt@example.com',
-      adminEmail: 'admin@example.com',
-      maxAppointmentsPerSlot: 1,
-      bookingMode: 'manual' as const,
-      requireApproval: true,
-    };
+    // ✅ Verwende getSettings() für normalisierte Settings
+    const settings = await getSettings(kv);
 
-    // Zeitslot freigeben
+    // ✅ Verwende releaseSlot() aus slot-utils
     try {
-      // Aus Slot-Index entfernen, um Zeitslot freizugeben
-      const appointmentDate = new Date(appointment.appointmentDate);
-      const dateKey = appointmentDate.toISOString().split('T')[0];
-      const slotKey = `slot:${appointment.day}:${appointment.time}:${dateKey}`;
-      
-      const existingSlotData = await kv.get(slotKey);
-      if (existingSlotData) {
-        const slotAppointments: string[] = JSON.parse(existingSlotData);
-        const updatedSlotAppointments = slotAppointments.filter(aptId => aptId !== id);
-        
-        if (updatedSlotAppointments.length > 0) {
-          await kv.put(
-            slotKey,
-            JSON.stringify(updatedSlotAppointments),
-            { expirationTtl: 60 * 60 * 24 * 30 }
-          );
-        } else {
-          await kv.delete(slotKey);
-        }
+      const released = await releaseSlot(
+        kv,
+        appointment.day,
+        appointment.time,
+        appointment.appointmentDate,
+        id
+      );
+
+      if (released) {
+        console.log(`✅ Slot released for ${appointment.day} ${appointment.time}`);
+      } else {
+        console.warn(`⚠️ Slot not found or already released for ${appointment.day} ${appointment.time}`);
       }
 
-      // Status auf cancelled setzen, aber Termin NICHT löschen
+      // Status auf cancelled setzen
       appointment.status = 'cancelled';
       appointment.updatedAt = new Date().toISOString();
-      await kv.put(`appointment:${id}`, JSON.stringify(appointment));
+      
+      // ✅ Verwende updateAppointment() aus kv-utils
+      await updateAppointment(kv, appointment);
 
-      // ✅ Zentrale URL-Generierung mit ADMIN_BASE_URL
+      // ✅ Zentrale URL-Generierung
       const appointmentUrl = getAppointmentUrl(id, locals?.runtime?.env, url.origin);
 
-      // E-Mail-Daten vorbereiten
+      // E-Mail-Daten vorbereiten (ISO-Format für Datum)
       const emailData = {
         name: appointment.name,
         company: appointment.company,
         phone: appointment.phone,
         email: appointment.email,
-        day: DAY_NAMES_FULL[appointment.day],
+        day: appointmentDate.toISOString().split('T')[0], // ISO-Format: "2025-01-17"
         time: appointment.time,
         message: appointment.message,
         appointmentUrl,

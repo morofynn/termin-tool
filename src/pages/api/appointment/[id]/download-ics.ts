@@ -1,5 +1,7 @@
 import type { APIRoute } from 'astro';
 import ical from 'ical-generator';
+import { getSettings, getAppointment } from '../../../../lib/kv-utils';
+import { validateAndParseBerlinDate } from '../../../../lib/date-utils';
 
 export const GET: APIRoute = async ({ params, locals, request }) => {
   const { id } = params;
@@ -8,8 +10,8 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
     return new Response('Missing appointment ID', { status: 400 });
   }
 
-  // Try multiple ways to access KV
-  const KV = locals?.runtime?.env?.APPOINTMENT_BOOKINGS || 
+  // KV Store aus Cloudflare Runtime holen
+  const KV = locals?.runtime?.env?.APPOINTMENTS_KV || 
              (locals as any)?.APPOINTMENT_BOOKINGS ||
              import.meta.env?.APPOINTMENT_BOOKINGS;
 
@@ -20,30 +22,25 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
   }
 
   try {
-    // Get appointment data
-    const appointmentJson = await KV.get(`appointment:${id}`);
-    if (!appointmentJson) {
+    // ✅ Verwende getAppointment() aus kv-utils
+    const appointment = await getAppointment(KV, id);
+    if (!appointment) {
       return new Response('Appointment not found', { status: 404 });
     }
 
-    const appointment = JSON.parse(appointmentJson);
+    // ✅ Verwende getSettings() für normalisierte Settings
+    const settings = await getSettings(KV);
 
-    // Get settings
-    const settingsJson = await KV.get('settings');
-    const settings = settingsJson ? JSON.parse(settingsJson) : {
-      companyName: 'Unternehmen',
-      companyEmail: 'info@example.com',
-      companyPhone: '+49 123 456789',
-      companyAddress: 'Musterstraße 1, 12345 Musterstadt',
-      companyWebsite: '',
-      eventLocation: 'Veranstaltungsort',
-      eventHall: 'Halle/Raum'
-    };
-
-    // Parse date and time
-    const appointmentDate = new Date(appointment.date);
-    const [startHours, startMinutes] = appointment.startTime.split(':').map(Number);
-    const [endHours, endMinutes] = appointment.endTime.split(':').map(Number);
+    // ✅ Validiere appointmentDate mit date-utils
+    const appointmentDate = validateAndParseBerlinDate(appointment.appointmentDate);
+    if (!appointmentDate) {
+      console.error(`Invalid appointment date for ${id}: ${appointment.appointmentDate}`);
+      return new Response('Invalid appointment date', { status: 400 });
+    }
+    
+    const [startHours, startMinutes] = appointment.time.split(':').map(Number);
+    const endHours = appointment.endTime ? appointment.endTime.split(':').map(Number)[0] : startHours + 1;
+    const endMinutes = appointment.endTime ? appointment.endTime.split(':').map(Number)[1] : startMinutes;
 
     const startDateTime = new Date(appointmentDate);
     startDateTime.setHours(startHours, startMinutes, 0, 0);
@@ -75,7 +72,6 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
         (settings.companyWebsite ? `\nWeb: ${settings.companyWebsite}` : '') +
         `\n\nTermindetails: ${appointmentUrl}`,
       location,
-      // URL-Zeile entfernt - war doppelt mit description
       organizer: {
         name: settings.companyName,
         email: settings.companyEmail,

@@ -837,7 +837,7 @@ export default function AdminSettings({ isOpen, onClose }: AdminSettingsProps) {
                   </div>
                   <Switch
                     id="dayFriday"
-                    checked={settings.availableDays.friday}
+                    checked={settings.availableDays?.friday ?? false}
                     onCheckedChange={(checked) => updateNestedSetting('availableDays', 'friday', checked)}
                   />
                 </div>
@@ -851,7 +851,7 @@ export default function AdminSettings({ isOpen, onClose }: AdminSettingsProps) {
                   </div>
                   <Switch
                     id="daySaturday"
-                    checked={settings.availableDays.saturday}
+                    checked={settings.availableDays?.saturday ?? false}
                     onCheckedChange={(checked) => updateNestedSetting('availableDays', 'saturday', checked)}
                   />
                 </div>
@@ -865,7 +865,7 @@ export default function AdminSettings({ isOpen, onClose }: AdminSettingsProps) {
                   </div>
                   <Switch
                     id="daySunday"
-                    checked={settings.availableDays.sunday}
+                    checked={settings.availableDays?.sunday ?? false}
                     onCheckedChange={(checked) => updateNestedSetting('availableDays', 'sunday', checked)}
                   />
                 </div>

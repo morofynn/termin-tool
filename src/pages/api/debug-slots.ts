@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { getEventDateISO } from '../../lib/event-config';
 
 interface Appointment {
   id: string;
@@ -10,6 +11,34 @@ interface Appointment {
   email: string;
 }
 
+interface Settings {
+  maxAppointmentsPerSlot?: number;
+  maxBookingsPerSlot?: number;
+  availableDays?: any;
+  eventYear?: number;
+  eventDateFriday?: string;
+  eventDateSaturday?: string;
+  eventDateSunday?: string;
+  [key: string]: any;
+}
+
+/**
+ * ✅ FIX #14: Date-Validierung Helper
+ */
+function validateAndParseDate(dateString: string): Date | null {
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      console.error(`Invalid date: ${dateString}`);
+      return null;
+    }
+    return date;
+  } catch (error) {
+    console.error(`Error parsing date: ${dateString}`, error);
+    return null;
+  }
+}
+
 export const GET: APIRoute = async ({ locals, url }) => {
   try {
     const kv = locals.runtime?.env?.APPOINTMENTS_KV;
@@ -17,14 +46,17 @@ export const GET: APIRoute = async ({ locals, url }) => {
       return new Response('KV not available', { status: 500 });
     }
 
-    // Hole Settings
-    const settingsData = await kv.get('app:settings');
-    const settings = settingsData ? JSON.parse(settingsData) : null;
+    // ✅ FIX #9: Korrekter Settings-Key
+    const settingsData = await kv.get('settings');
+    const settings: Settings | null = settingsData ? JSON.parse(settingsData) : null;
 
     // Spezifischer Slot zum Debuggen
     const day = url.searchParams.get('day') || 'friday';
     const time = url.searchParams.get('time') || '10:30';
-    const slotKey = `slot:${day}-${time}`;
+    
+    // ✅ FIX #10: Korrektes Slot-Key Format mit dateKey (3 Parameter)
+    const eventDate = getEventDateISO(day as 'friday' | 'saturday' | 'sunday', settings);
+    const slotKey = `slot:${day}:${time}:${eventDate}`;
 
     // Hole Slot-Daten
     const slotData = await kv.get(slotKey);
@@ -36,6 +68,10 @@ export const GET: APIRoute = async ({ locals, url }) => {
       const aptData = await kv.get(`appointment:${aptId}`);
       if (aptData) {
         const apt: Appointment = JSON.parse(aptData);
+        
+        // ✅ FIX #14: Validiere appointmentDate
+        const validDate = validateAndParseDate(apt.appointmentDate);
+        
         appointments.push({
           id: apt.id,
           name: apt.name,
@@ -43,6 +79,8 @@ export const GET: APIRoute = async ({ locals, url }) => {
           status: apt.status,
           time: apt.time,
           day: apt.day,
+          appointmentDate: apt.appointmentDate,
+          appointmentDateValid: validDate !== null,
         });
       }
     }
@@ -61,22 +99,39 @@ export const GET: APIRoute = async ({ locals, url }) => {
       const aptData = await kv.get(`appointment:${aptId}`);
       if (aptData) {
         const apt: Appointment = JSON.parse(aptData);
-        if (apt.day === day && apt.time === time) {
+        
+        // ✅ FIX #14: Validiere appointmentDate
+        const validDate = validateAndParseDate(apt.appointmentDate);
+        
+        // Vergleiche mit eventDate (nicht nur day/time)
+        const aptDateKey = validDate ? validDate.toISOString().split('T')[0] : null;
+        
+        if (apt.day === day && apt.time === time && aptDateKey === eventDate) {
           allAppointments.push({
             id: apt.id,
             name: apt.name,
             email: apt.email,
             status: apt.status,
+            appointmentDate: apt.appointmentDate,
+            appointmentDateValid: validDate !== null,
+            dateKey: aptDateKey,
           });
         }
       }
     }
 
+    // ✅ FIX #8: Zeige beide Namen für Diagnose
+    const maxSlots = settings?.maxAppointmentsPerSlot ?? settings?.maxBookingsPerSlot ?? 'not set';
+
     const result = {
-      slot: `${day} ${time}`,
+      slot: `${day} ${time} (${eventDate})`,
       settings: {
-        maxBookingsPerSlot: settings?.maxBookingsPerSlot || 'not set',
+        maxAppointmentsPerSlot: settings?.maxAppointmentsPerSlot || 'not set',
+        maxBookingsPerSlot: settings?.maxBookingsPerSlot || 'not set (deprecated)',
+        effectiveMaxSlots: maxSlots,
         availableDays: settings?.availableDays || 'not set',
+        eventYear: settings?.eventYear || 'not set',
+        eventDateForDay: eventDate,
       },
       slotKey,
       slotData: {
@@ -92,7 +147,11 @@ export const GET: APIRoute = async ({ locals, url }) => {
         fromList: allAppointments.length,
         activeFromList: allAppointments.filter(a => a.status !== 'cancelled').length,
       },
-      issue: slotAppointments.length !== allAppointments.length ? 'INCONSISTENCY DETECTED!' : 'OK',
+      validation: {
+        allDatesValid: appointments.every(a => a.appointmentDateValid),
+        invalidDates: appointments.filter(a => !a.appointmentDateValid).map(a => ({ id: a.id, date: a.appointmentDate })),
+      },
+      issue: slotAppointments.length !== allAppointments.length ? '⚠️ INCONSISTENCY DETECTED!' : '✅ OK',
     };
 
     return new Response(

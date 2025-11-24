@@ -1,15 +1,59 @@
 import type { APIRoute } from 'astro';
 
 /**
+ * Google OAuth Token Response Interface
+ */
+interface GoogleTokenResponse {
+  access_token: string;
+  refresh_token?: string;
+  expires_in: number;
+  token_type: string;
+  scope?: string;
+}
+
+/**
+ * Google OAuth Error Response Interface
+ */
+interface GoogleErrorResponse {
+  error: string;
+  error_description?: string;
+}
+
+/**
+ * Type guard to check if response is an error
+ */
+function isErrorResponse(data: unknown): data is GoogleErrorResponse {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'error' in data &&
+    typeof (data as GoogleErrorResponse).error === 'string'
+  );
+}
+
+/**
+ * Type guard to check if response is valid token response
+ */
+function isTokenResponse(data: unknown): data is GoogleTokenResponse {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'access_token' in data &&
+    typeof (data as GoogleTokenResponse).access_token === 'string' &&
+    'expires_in' in data &&
+    typeof (data as GoogleTokenResponse).expires_in === 'number'
+  );
+}
+
+/**
  * Google OAuth Callback Handler
  * 
  * Diese Route wird von Google nach der Autorisierung aufgerufen.
  * Sie tauscht den Authorization Code gegen einen Access Token und Refresh Token.
  */
-export const GET: APIRoute = async ({ request, url }) => {
+export const GET: APIRoute = async ({ url }) => {
   const code = url.searchParams.get('code');
   const error = url.searchParams.get('error');
-  const state = url.searchParams.get('state');
 
   // Fehler von Google
   if (error) {
@@ -65,13 +109,26 @@ export const GET: APIRoute = async ({ request, url }) => {
       }),
     });
 
+    const responseData: unknown = await tokenResponse.json();
+
     if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.json();
-      console.error('Token exchange failed:', errorData);
-      throw new Error(`Token exchange failed: ${errorData.error_description || errorData.error}`);
+      console.error('Token exchange failed:', responseData);
+      
+      let errorMessage = 'Token exchange failed';
+      if (isErrorResponse(responseData)) {
+        errorMessage = responseData.error_description || responseData.error;
+      }
+      
+      throw new Error(errorMessage);
     }
 
-    const tokens = await tokenResponse.json();
+    // Validate token response
+    if (!isTokenResponse(responseData)) {
+      console.error('Invalid token response structure:', responseData);
+      throw new Error('Invalid token response from Google');
+    }
+
+    const tokens = responseData;
 
     // Validiere dass wir einen Refresh Token bekommen haben
     if (!tokens.refresh_token) {

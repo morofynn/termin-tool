@@ -4,6 +4,9 @@ import { sendAdminNotification, sendCustomerNotification } from '../../../lib/em
 import { getLongLabel } from '../../../lib/event-config';
 import { DAY_NAMES } from '../../../lib/constants';
 import { getAppointmentUrl } from '../../../lib/url-utils';
+import { getSettings, getAppointment, updateAppointment } from '../../../lib/kv-utils';
+import { releaseSlot } from '../../../lib/slot-utils';
+import { validateAndParseBerlinDate } from '../../../lib/date-utils';
 
 interface Appointment {
   id: string;
@@ -18,12 +21,7 @@ interface Appointment {
   googleEventId?: string;
   status: 'confirmed' | 'cancelled' | 'pending';
   createdAt: string;
-}
-
-interface AppSettings {
-  emailNotifications?: boolean;
-  adminEmail?: string;
-  [key: string]: any;
+  updatedAt?: string;
 }
 
 const DAY_NAMES_FULL: { [key: string]: string } = {
@@ -31,8 +29,6 @@ const DAY_NAMES_FULL: { [key: string]: string } = {
   saturday: getLongLabel('saturday'),
   sunday: getLongLabel('sunday'),
 };
-
-const SETTINGS_KEY = 'app:settings';
 
 function isValidEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -61,16 +57,24 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
       );
     }
 
-    // Appointment laden
-    const appointmentData = await kv.get(`appointment:${appointmentId}`);
-    if (!appointmentData) {
+    // ✅ Verwende getAppointment() aus kv-utils
+    const appointment = await getAppointment(kv, appointmentId);
+    if (!appointment) {
       return new Response(
         JSON.stringify({ message: 'Termin nicht gefunden' }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    const appointment: Appointment = JSON.parse(appointmentData);
+    // ✅ Validiere appointmentDate mit date-utils
+    const appointmentDate = validateAndParseBerlinDate(appointment.appointmentDate);
+    if (!appointmentDate) {
+      console.error(`Invalid appointmentDate for appointment ${appointmentId}: ${appointment.appointmentDate}`);
+      return new Response(
+        JSON.stringify({ message: 'Ungültiges Termin-Datum' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Prüfen ob bereits storniert
     if (appointment.status === 'cancelled') {
@@ -80,19 +84,8 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
       );
     }
 
-    // Einstellungen laden für E-Mail-Benachrichtigungen
-    let emailNotifications = false;
-    let adminEmail = '';
-    try {
-      const settingsData = await kv.get(SETTINGS_KEY);
-      if (settingsData) {
-        const settings: AppSettings = JSON.parse(settingsData);
-        emailNotifications = settings.emailNotifications || false;
-        adminEmail = settings.adminEmail || '';
-      }
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    }
+    // ✅ Verwende getSettings() für normalisierte Settings
+    const settings = await getSettings(kv);
 
     // Google Calendar Event löschen (falls vorhanden)
     if (appointment.googleEventId) {
@@ -127,7 +120,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
               }
             );
 
-            console.log('Google Calendar event deleted:', appointment.googleEventId);
+            console.log('✅ Google Calendar event deleted:', appointment.googleEventId);
           }
         } catch (error) {
           console.error('Failed to delete Google Calendar event:', error);
@@ -136,32 +129,28 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
       }
     }
 
-    // Zeitslot freigeben und Status auf cancelled setzen
+    // ✅ Verwende releaseSlot() aus slot-utils
     try {
-      // Aus Slot-Index entfernen, um Zeitslot freizugeben
-      const appointmentDate = new Date(appointment.appointmentDate);
-      const dateKey = appointmentDate.toISOString().split('T')[0];
-      const slotKey = `slot:${appointment.day}:${appointment.time}:${dateKey}`;
-      
-      const existingSlotData = await kv.get(slotKey);
-      if (existingSlotData) {
-        const slotAppointments: string[] = JSON.parse(existingSlotData);
-        const updatedSlotAppointments = slotAppointments.filter(aptId => aptId !== appointmentId);
-        
-        if (updatedSlotAppointments.length > 0) {
-          await kv.put(
-            slotKey,
-            JSON.stringify(updatedSlotAppointments),
-            { expirationTtl: 60 * 60 * 24 * 90 }
-          );
-        } else {
-          await kv.delete(slotKey);
-        }
+      const released = await releaseSlot(
+        kv,
+        appointment.day,
+        appointment.time,
+        appointment.appointmentDate,
+        appointmentId
+      );
+
+      if (released) {
+        console.log(`✅ Slot released for ${appointment.day} ${appointment.time}`);
+      } else {
+        console.warn(`⚠️ Slot not found or already released for ${appointment.day} ${appointment.time}`);
       }
 
-      // Status auf cancelled setzen, aber Termin NICHT löschen
+      // Status auf cancelled setzen
       appointment.status = 'cancelled';
-      await kv.put(`appointment:${appointmentId}`, JSON.stringify(appointment));
+      appointment.updatedAt = new Date().toISOString();
+      
+      // ✅ Verwende updateAppointment() aus kv-utils
+      await updateAppointment(kv, appointment);
 
       // Audit Log erstellen
       await createAuditLog(
@@ -172,7 +161,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
         appointment.email
       );
 
-      // ✅ Zentrale URL-Generierung mit ADMIN_BASE_URL
+      // ✅ Zentrale URL-Generierung
       const appointmentUrl = getAppointmentUrl(appointmentId, locals?.runtime?.env, url.origin);
 
       // E-Mail-Daten vorbereiten
@@ -181,7 +170,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
         company: appointment.company,
         phone: appointment.phone,
         email: appointment.email,
-        day: new Date(appointment.appointmentDate).toISOString().split('T')[0],
+        day: appointmentDate.toISOString().split('T')[0],
         time: appointment.time,
         message: appointment.message,
         appointmentUrl,
@@ -190,20 +179,20 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
       };
 
       // Admin-Benachrichtigung senden (wenn aktiviert)
-      if (emailNotifications && adminEmail && isValidEmail(adminEmail)) {
+      if (settings.emailNotifications && settings.adminEmail && isValidEmail(settings.adminEmail)) {
         try {
           const adminEmailSent = await sendAdminNotification(
             emailData,
-            adminEmail,
+            settings.adminEmail,
             locals?.runtime?.env
           );
 
           if (adminEmailSent) {
-            console.log(`✅ Admin cancellation notification sent to ${adminEmail}`);
+            console.log(`✅ Admin cancellation notification sent to ${settings.adminEmail}`);
             await createAuditLog(
               kv,
               "E-Mail an Admin",
-              `Admin wurde über Stornierung informiert (${adminEmail}).`,
+              `Admin wurde über Stornierung informiert (${settings.adminEmail}).`,
               appointment.id,
               'system'
             );
@@ -240,7 +229,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
           appointment: {
             name: appointment.name,
             email: appointment.email,
-            day: new Date(appointment.appointmentDate).toISOString().split('T')[0],
+            day: appointmentDate.toISOString().split('T')[0],
             time: appointment.time,
           },
         }),
