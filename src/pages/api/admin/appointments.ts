@@ -241,6 +241,7 @@ async function confirmAppointment(
 /**
  * STORNIERT einen Termin
  * ✅ FIX: Verwendet neue Email-API
+ * ✅ NEU: Admin bekommt auch eine Email wenn er selbst storniert
  */
 async function cancelAppointment(
   appointment: Appointment,
@@ -296,6 +297,37 @@ async function cancelAppointment(
     );
   } catch (emailError) {
     console.error('❌ Error sending cancellation email:', emailError);
+  }
+
+  // ✅ NEU: Admin-Benachrichtigung senden (falls gewünscht)
+  try {
+    const settingsData = await KV.get('settings');
+    if (settingsData) {
+      const settings = JSON.parse(settingsData);
+      const adminEmail = settings.adminEmail;
+      
+      if (adminEmail && settings.emailNotifications) {
+        await sendAdminNotification(
+          {
+            name: appointment.name,
+            email: appointment.email,
+            day: appointment.appointmentDate,
+            time: appointment.time,
+            company: appointment.company,
+            phone: appointment.phone || '',
+            message: appointment.message,
+            appointmentUrl,
+            action: 'cancelled',
+            status: 'cancelled',
+          },
+          adminEmail,
+          locals?.runtime?.env
+        );
+        console.log('✅ Admin cancellation notification sent');
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error sending admin notification:', error);
   }
 
   return new Response(JSON.stringify({ success: true }), {
@@ -384,7 +416,7 @@ async function deleteAppointment(
 
 /**
  * HELPER: Google Calendar Event erstellen
- * ✅ FIX: Verwendet OAuth Refresh Token Flow + speichert Event ID
+ * ✅ Nur noch 30min Popup-Erinnerung (keine Email mehr)
  */
 async function createGoogleCalendarEvent(
   appointment: Appointment,
@@ -456,7 +488,6 @@ async function createGoogleCalendarEvent(
       reminders: {
         useDefault: false,
         overrides: [
-          { method: 'email', minutes: 24 * 60 },
           { method: 'popup', minutes: 30 },
         ],
       },

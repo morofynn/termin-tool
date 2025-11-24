@@ -24,6 +24,8 @@ interface Settings {
   companyWebsite: string;
   eventLocation: string;
   eventHall: string;
+  eventName?: string;
+  standInfo?: string;
 }
 
 interface AppointmentQRCodeProps {
@@ -83,28 +85,46 @@ export default function AppointmentQRCode({ appointmentId, appointmentData, sett
       endDateTime.setHours(endHours, endMinutes, 0, 0);
 
       const appointmentUrl = `${window.location.origin}${window.location.pathname}`;
-      const location = `${settings.eventLocation}, ${settings.eventHall}`;
 
-      const calendar = ical({ name: 'Terminbestätigung' });
+      // Identisch mit Email-ICS: OHNE Firmenadresse, OHNE RSVP
+      const description = [
+        `Termin mit ${settings.companyName}`,
+        settings.eventName ? `\nVeranstaltung: ${settings.eventName}` : '',
+        settings.standInfo ? `\nStand/Ort: ${settings.standInfo}` : '',
+        `\n\nKontakt:`,
+        `\nTelefon: ${settings.companyPhone}`,
+        `\nE-Mail: ${settings.companyEmail}`,
+        settings.companyWebsite ? `\nWebsite: ${settings.companyWebsite}` : '',
+        appointmentData.message ? `\n\nIhre Nachricht:\n${appointmentData.message}` : '',
+        `\n\nTermin verwalten:\n${appointmentUrl}`,
+      ].filter(Boolean).join('');
+
+      // Location: Nur standInfo, KEIN Fallback auf companyAddress
+      const location = settings.standInfo 
+        ? `${settings.standInfo}${settings.eventName ? ` (${settings.eventName})` : ''}`
+        : '';
+
+      const calendar = ical({ name: `Termin ${settings.companyName}` });
 
       calendar.createEvent({
         start: startDateTime,
         end: endDateTime,
-        summary: `Termin bei ${settings.companyName}`,
-        description: `Ihr Termin bei ${settings.companyName}\n\n` +
-          `Ort: ${location}\n\n` +
-          `Kontakt:\n` +
-          `${settings.companyName}\n` +
-          `${settings.companyAddress}\n` +
-          `Tel: ${settings.companyPhone}\n` +
-          `E-Mail: ${settings.companyEmail}` +
-          (settings.companyWebsite ? `\nWeb: ${settings.companyWebsite}` : '') +
-          `\n\nTermindetails: ${appointmentUrl}`,
+        summary: settings.eventName 
+          ? `Termin: ${settings.companyName} - ${settings.eventName}` 
+          : `Termin: ${settings.companyName}`,
+        description,
         location,
         organizer: {
           name: settings.companyName,
           email: settings.companyEmail,
         },
+        attendees: [
+          {
+            name: appointmentData.name,
+            email: appointmentData.email,
+            rsvp: false,
+          }
+        ],
       });
 
       const icsContent = calendar.toString();

@@ -41,7 +41,8 @@ export interface AppointmentData {
 
 /**
  * Generiert ICS Calendar Datei für Appointment
- * ✅ FIX: Absätze nach "Kontakt:" + Link zur Terminansicht
+ * ✅ OHNE Firmenadresse in Beschreibung und Ort
+ * ✅ OHNE RSVP
  */
 export function generateICS(appointment: AppointmentData, settings: EmailSettings): string {
   const calendar = ical({ name: `Termin ${settings.companyName}` });
@@ -57,12 +58,11 @@ export function generateICS(appointment: AppointmentData, settings: EmailSetting
   const endDateTime = new Date(appointmentDate);
   endDateTime.setHours(endHour, endMin, 0, 0);
   
-  // Kunden-ICS: Zeige FIRMENDATEN prominent mit Absätzen
+  // Kunden-ICS: Zeige FIRMENDATEN prominent mit Absätzen (OHNE Firmenadresse)
   const description = [
     `Termin mit ${settings.companyName}`,
     settings.eventName ? `\nVeranstaltung: ${settings.eventName}` : '',
     settings.standInfo ? `\nStand/Ort: ${settings.standInfo}` : '',
-    `\n${settings.companyAddress}`,
     `\n\nKontakt:`,
     `\nTelefon: ${settings.companyPhone}`,
     `\nE-Mail: ${settings.companyEmail}`,
@@ -70,6 +70,11 @@ export function generateICS(appointment: AppointmentData, settings: EmailSetting
     appointment.message ? `\n\nIhre Nachricht:\n${appointment.message}` : '',
     `\n\nTermin verwalten:\n${appointment.appointmentUrl}`,
   ].filter(Boolean).join('');
+  
+  // Location: Nur standInfo, KEIN Fallback auf companyAddress
+  const location = settings.standInfo 
+    ? `${settings.standInfo}${settings.eventName ? ` (${settings.eventName})` : ''}`
+    : '';
   
   // Create Event
   calendar.createEvent({
@@ -79,9 +84,7 @@ export function generateICS(appointment: AppointmentData, settings: EmailSetting
       ? `Termin: ${settings.companyName} - ${settings.eventName}` 
       : `Termin: ${settings.companyName}`,
     description,
-    location: settings.standInfo 
-      ? `${settings.standInfo}${settings.eventName ? ` (${settings.eventName})` : ''}`
-      : settings.companyAddress,
+    location,
     organizer: {
       name: settings.companyName,
       email: settings.companyEmail,
@@ -90,7 +93,7 @@ export function generateICS(appointment: AppointmentData, settings: EmailSetting
       {
         name: appointment.name,
         email: appointment.email,
-        rsvp: true,
+        rsvp: false,
       }
     ],
     status: appointment.status === 'confirmed' ? 'CONFIRMED' : 'TENTATIVE',

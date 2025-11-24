@@ -11,6 +11,7 @@
  * Fixed: Test-Emails senden BEIDE Versionen (Kunde + Admin) an Admin
  * Fixed: Sofortbuchung sendet Admin-Mail mit richtiger Action (instant-booked)
  * Fixed: Admin Base URL aus Environment Variable (ADMIN_BASE_URL)
+ * Fixed: Admin bekommt KEINE ICS-Anhänge mehr (nur Kunde)
  */
 
 import { 
@@ -418,10 +419,10 @@ export async function sendCustomerNotification(
 /**
  * Sends admin notification
  * ✅ FIX: Admin-Email Link führt zum Admin-Panel (nicht zu Terminseite)
- * ✅ FIX: Auto-Confirm Emails haben jetzt ICS-Anhang
  * ✅ FIX: Subject & Header korrekt formatiert
  * ✅ FIX: Sofortbuchung (instant-booked) wird akzeptiert und als separater Template generiert
  * ✅ FIX: Admin Base URL aus Environment Variable (ADMIN_BASE_URL)
+ * ✅ FIX: Admin bekommt KEINE ICS-Anhänge (nur Kunde bekommt ICS)
  */
 export async function sendAdminNotification(
   data: {
@@ -497,19 +498,12 @@ export async function sendAdminNotification(
       break;
   }
   
-  // ✅ FIX: ICS-Anhang für Auto-Confirm & bestätigte Termine (action = 'confirmed' oder 'instant-booked')
-  let icsAttachment: string | undefined = undefined;
-  if (data.action === 'confirmed' || data.action === 'instant-booked') {
-    // Verwende die Original-Termin-URL (nicht Admin-Panel) für ICS
-    const icsAppointment = convertToAppointmentData(data, durationMinutes);
-    icsAttachment = generateICS(icsAppointment, settings);
-  }
-  
+  // ✅ KEINE ICS-Anhänge für Admin (nur HTML Email)
   const result = await sendEmail({
     to: adminEmail,
     subject,
     html,
-    icsAttachment, // ✅ ICS-Anhang bei confirmed und instant-booked
+    // KEIN icsAttachment!
     from: `${settings.companyName} - Terminbuchung <${settings.companyEmail}>`,
   }, env);
 

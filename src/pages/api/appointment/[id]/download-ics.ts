@@ -37,7 +37,9 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
       companyAddress: 'Musterstraße 1, 12345 Musterstadt',
       companyWebsite: '',
       eventLocation: 'Veranstaltungsort',
-      eventHall: 'Halle/Raum'
+      eventHall: 'Halle/Raum',
+      eventName: '',
+      standInfo: ''
     };
 
     // Parse date and time
@@ -55,31 +57,48 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
     const url = new URL(request.url);
     const baseUrl = `${url.protocol}//${url.host}`;
     const appointmentUrl = `${baseUrl}/termin/${id}`;
-    const location = `${settings.eventLocation}, ${settings.eventHall}`;
+
+    // Identisch mit Email-ICS: OHNE Firmenadresse, OHNE RSVP
+    const description = [
+      `Termin mit ${settings.companyName}`,
+      settings.eventName ? `\nVeranstaltung: ${settings.eventName}` : '',
+      settings.standInfo ? `\nStand/Ort: ${settings.standInfo}` : '',
+      `\n\nKontakt:`,
+      `\nTelefon: ${settings.companyPhone}`,
+      `\nE-Mail: ${settings.companyEmail}`,
+      settings.companyWebsite ? `\nWebsite: ${settings.companyWebsite}` : '',
+      appointment.message ? `\n\nIhre Nachricht:\n${appointment.message}` : '',
+      `\n\nTermin verwalten:\n${appointmentUrl}`,
+    ].filter(Boolean).join('');
+
+    // Location: Nur standInfo, KEIN Fallback auf companyAddress
+    const location = settings.standInfo 
+      ? `${settings.standInfo}${settings.eventName ? ` (${settings.eventName})` : ''}`
+      : '';
 
     // Create ICS
-    const calendar = ical({ name: 'Terminbestätigung' });
+    const calendar = ical({ name: `Termin ${settings.companyName}` });
 
-    // ICS enthält Unternehmensdaten, nicht Kundendaten
     calendar.createEvent({
       start: startDateTime,
       end: endDateTime,
-      summary: `Termin bei ${settings.companyName}`,
-      description: `Ihr Termin bei ${settings.companyName}\n\n` +
-        `Ort: ${location}\n\n` +
-        `Kontakt:\n` +
-        `${settings.companyName}\n` +
-        `${settings.companyAddress}\n` +
-        `Tel: ${settings.companyPhone}\n` +
-        `E-Mail: ${settings.companyEmail}` +
-        (settings.companyWebsite ? `\nWeb: ${settings.companyWebsite}` : '') +
-        `\n\nTermindetails: ${appointmentUrl}`,
+      summary: settings.eventName 
+        ? `Termin: ${settings.companyName} - ${settings.eventName}` 
+        : `Termin: ${settings.companyName}`,
+      description,
       location,
-      // URL-Zeile entfernt - war doppelt mit description
       organizer: {
         name: settings.companyName,
         email: settings.companyEmail,
       },
+      attendees: [
+        {
+          name: appointment.name,
+          email: appointment.email,
+          rsvp: false,
+        }
+      ],
+      status: appointment.status === 'confirmed' ? 'CONFIRMED' : 'TENTATIVE',
     });
 
     const icsContent = calendar.toString();
