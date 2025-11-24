@@ -41,7 +41,7 @@ import {
 import { Separator } from './ui/separator';
 import AdminGoogleCalendar from './AdminGoogleCalendar';
 
-// ✅ KORRIGIERT: Defaults mit 2026 und richtigen Daten
+// ✅ FIX: Verwende maxAppointmentsPerSlot überall
 const defaultSettings: Settings = {
   companyName: 'MORO',
   companyAddress: 'Eupener Str. 124, 50933 Köln',
@@ -50,8 +50,7 @@ const defaultSettings: Settings = {
   companyWebsite: 'https://www.moroclub.com',
   logoUrl: 'https://cdn.prod.website-files.com/66c5b6f94041a6256d15cfa6/66d86596b9d572660f8b239d_moro-logo.svg',
   primaryColor: '#2d62ff',
-  maxAppointmentsPerSlot: 1,
-  maxBookingsPerSlot: 1,
+  maxAppointmentsPerSlot: 1, // ✅ FIX: Entferne maxBookingsPerSlot
   bookingMode: 'manual',
   autoConfirm: false,
   requireApproval: true,
@@ -67,15 +66,15 @@ const defaultSettings: Settings = {
   messagePlaceholder: 'Ihre Nachricht...',
   preventDuplicateEmail: true,
   standInfo: 'Stand C4.246, Messe München',
-  eventLocation: 'Stand C4.246', // ✅ GEÄNDERT: C4.246
+  eventLocation: 'Stand C4.246',
   eventHall: 'Messe München',
   eventEnded: false,
   eventEndDate: new Date('2026-01-18T23:59:59.999Z').toISOString(),
   eventName: 'OPTI',
-  eventYear: 2026, // ✅ KORRIGIERT: 2026
-  eventDateFriday: '2026-01-16', // ✅ KORRIGIERT
-  eventDateSaturday: '2026-01-17', // ✅ KORRIGIERT
-  eventDateSunday: '2026-01-18', // ✅ KORRIGIERT
+  eventYear: 2026,
+  eventDateFriday: '2026-01-16',
+  eventDateSaturday: '2026-01-17',
+  eventDateSunday: '2026-01-18',
   maintenanceMode: false,
   maintenanceMessage: 'Das Buchungssystem ist vorübergehend nicht verfügbar. Bitte versuchen Sie es später erneut.',
   rateLimitingEnabled: true,
@@ -312,7 +311,6 @@ export default function AdminSettings({ isOpen, onClose }: AdminSettingsProps) {
     }
   };
 
-  // ✅ FIX: Audit Log Eintrag hinzufügen
   const handleResetSettings = async () => {
     setDeletingAll(true);
     try {
@@ -329,7 +327,6 @@ export default function AdminSettings({ isOpen, onClose }: AdminSettingsProps) {
         toast.success('Einstellungen wurden zurückgesetzt');
         setResetSettingsDialogOpen(false);
         
-        // ✅ AUDIT LOG EINTRAG ERSTELLEN
         await fetch(`${baseUrl}/api/admin/audit-log`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -350,14 +347,9 @@ export default function AdminSettings({ isOpen, onClose }: AdminSettingsProps) {
     }
   };
 
-  /**
-   * ✅ FIX: "Alles zurücksetzen" erstellt EINEN Audit-Eintrag,
-   * dann löscht es ALLES (inkl. des gerade erstellten Eintrags)
-   */
   const handleResetAll = async () => {
     setDeletingAll(true);
     try {
-      // 1. AUDIT LOG EINTRAG ERSTELLEN (BEVOR alles gelöscht wird)
       const auditResponse = await fetch(`${baseUrl}/api/admin/audit-log`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -372,19 +364,16 @@ export default function AdminSettings({ isOpen, onClose }: AdminSettingsProps) {
         console.error('❌ Failed to create audit log entry');
       }
 
-      // 2. TERMINE LÖSCHEN
       await fetch(`${baseUrl}/api/admin/appointments/delete-all`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
 
-      // 3. AUDIT LOG LÖSCHEN (mit ?silent=true - KEIN neuer Eintrag!)
       await fetch(`${baseUrl}/api/admin/audit-log/delete-all?silent=true`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
 
-      // 4. EINSTELLUNGEN ZURÜCKSETZEN
       setSettings(defaultSettings);
       await fetch(`${baseUrl}/api/admin/settings`, {
         method: 'POST',
@@ -1113,7 +1102,7 @@ export default function AdminSettings({ isOpen, onClose }: AdminSettingsProps) {
               </CardContent>
             </Card>
 
-            {/* Google Calendar Integration - VEREINFACHT */}
+            {/* Google Calendar Integration */}
             <AdminGoogleCalendar />
 
             {/* Gefahrenbereich */}
@@ -1303,7 +1292,7 @@ export default function AdminSettings({ isOpen, onClose }: AdminSettingsProps) {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Danger Zone Dialogs - Verbessert */}
+      {/* Danger Zone Dialogs */}
       <AlertDialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
         <AlertDialogContent className="rounded-2xl max-w-lg">
           <AlertDialogHeader>

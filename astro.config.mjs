@@ -87,5 +87,8 @@ export default defineConfig({
           }
         : undefined,
     },
+    ssr: {
+      external: ['ical-generator'],
+    },
   },
 });

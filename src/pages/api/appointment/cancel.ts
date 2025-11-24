@@ -152,7 +152,8 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
       // ✅ Verwende updateAppointment() aus kv-utils
       await updateAppointment(kv, appointment);
 
-      // Audit Log erstellen
+      // ✅ FIX v2.1: Nur EINEN Audit Log - VOR E-Mail-Versand
+      // E-Mail-Funktionen erstellen ihre eigenen Audit-Logs
       await createAuditLog(
         kv,
         'Termin storniert (Kunde)',
@@ -178,10 +179,8 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
         action: 'cancelled' as const,
       };
 
-      // ✅ FIX v1.1: E-Mail-Funktionen erstellen bereits Audit-Logs
-      // Keine doppelten Logs mehr hier
-
       // Admin-Benachrichtigung senden (wenn aktiviert)
+      // ✅ sendAdminNotification() erstellt eigenen Audit-Log
       if (settings.emailNotifications && settings.adminEmail && isValidEmail(settings.adminEmail)) {
         try {
           await sendAdminNotification(
@@ -196,6 +195,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
       }
 
       // Kunden-Benachrichtigung senden
+      // ✅ sendCustomerNotification() erstellt eigenen Audit-Log
       try {
         await sendCustomerNotification(
           emailData,

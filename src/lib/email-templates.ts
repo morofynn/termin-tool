@@ -8,7 +8,8 @@
  * - Responsive HTML Design
  * - Unterscheidung zwischen instant-booked und confirmed
  * 
- * ✅ FIX v1.1: RSVP aus ICS entfernt (verhindert Spam + doppelte ICS-Anhänge)
+ * ✅ FIX v1.2: attendees KOMPLETT ENTFERNT (verhindert Spam + doppelte ICS)
+ * ✅ FIX v2.1: METHOD=PUBLISH explizit gesetzt (verhindert RSVP-Anfragen)
  */
 
 import ical, { ICalCalendar } from 'ical-generator';
@@ -43,10 +44,14 @@ export interface AppointmentData {
 
 /**
  * Generiert ICS Calendar Datei für Appointment
- * ✅ FIX v1.1: RSVP entfernt (verhindert Spam + doppelte ICS-Anhänge)
+ * ✅ FIX v1.2: attendees KOMPLETT ENTFERNT - keine RSVP-Anfragen mehr
+ * ✅ FIX v2.1: METHOD=PUBLISH explizit gesetzt (verhindert RSVP-Anfragen)
  */
 export function generateICS(appointment: AppointmentData, settings: EmailSettings): string {
-  const calendar = ical({ name: `Termin ${settings.companyName}` });
+  const calendar = ical({ 
+    name: `Termin ${settings.companyName}`,
+    method: 'PUBLISH' // ✅ Explizit PUBLISH statt REQUEST (verhindert RSVP)
+  });
   
   // Parse Date & Time
   const appointmentDate = new Date(appointment.date);
@@ -73,7 +78,7 @@ export function generateICS(appointment: AppointmentData, settings: EmailSetting
     `\n\nTermin verwalten:\n${appointment.appointmentUrl}`,
   ].filter(Boolean).join('');
   
-  // ✅ FIX v1.1: RSVP entfernt - verhindert Spam und doppelte ICS-Anhänge
+  // ✅ FIX v1.2: KEINE attendees mehr - verhindert Spam & doppelte ICS-Dateien
   calendar.createEvent({
     start: startDateTime,
     end: endDateTime,
@@ -88,14 +93,7 @@ export function generateICS(appointment: AppointmentData, settings: EmailSetting
       name: settings.companyName,
       email: settings.companyEmail,
     },
-    // ✅ FIX: attendees ohne RSVP - nur informativ
-    attendees: [
-      {
-        name: appointment.name,
-        email: appointment.email,
-        // rsvp: true, ❌ ENTFERNT - verursacht Spam + doppelte ICS
-      }
-    ],
+    // ✅ attendees KOMPLETT ENTFERNT - keine RSVP-Anfragen mehr
     status: appointment.status === 'confirmed' ? 'CONFIRMED' : 'TENTATIVE',
   });
   

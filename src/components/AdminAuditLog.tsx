@@ -24,6 +24,12 @@ import { baseUrl } from '../lib/base-url';
 import { format, parseISO, isValid } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { toast } from 'sonner';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from './ui/tooltip';
 
 interface AdminAuditLogProps {
   isOpen: boolean;
@@ -406,21 +412,37 @@ export default function AdminAuditLog({ isOpen, onClose }: AdminAuditLogProps) {
                                   {log.details}
                                 </p>
 
-                                {/* Meta Info */}
-                                <div className="flex flex-wrap items-center gap-2">
-                                  {log.user && (
-                                    <Badge variant="outline" className="text-xs gap-1 bg-white border-gray-900 text-gray-900">
-                                      <User className="w-3 h-3" />
-                                      {log.user}
-                                    </Badge>
-                                  )}
-                                  {log.appointmentId && (
-                                    <Badge variant="outline" className="text-xs gap-1 bg-white font-mono border-gray-900 text-gray-900">
-                                      <Calendar className="w-3 h-3" />
-                                      {log.appointmentId.slice(0, 8)}...
-                                    </Badge>
-                                  )}
-                                </div>
+                                {/* ✅ FIX: Meta Info mit vollständiger ID + Tooltip */}
+                                <TooltipProvider>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    {log.user && (
+                                      <Badge variant="outline" className="text-xs gap-1 bg-white border-gray-900 text-gray-900">
+                                        <User className="w-3 h-3" />
+                                        {log.user}
+                                      </Badge>
+                                    )}
+                                    {log.appointmentId && (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Badge 
+                                            variant="outline" 
+                                            className="text-xs gap-1 bg-white font-mono border-gray-900 text-gray-900 cursor-help"
+                                          >
+                                            <Calendar className="w-3 h-3" />
+                                            {/* ✅ FIX: Zeige vollständige ID (maximal 16 Zeichen für bessere Lesbarkeit) */}
+                                            {log.appointmentId.length > 16 
+                                              ? `${log.appointmentId.slice(0, 16)}...`
+                                              : log.appointmentId
+                                            }
+                                          </Badge>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p className="text-xs font-mono">{log.appointmentId}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    )}
+                                  </div>
+                                </TooltipProvider>
                               </div>
                             </div>
                           </CardContent>

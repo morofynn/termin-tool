@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
-import ical from 'ical-generator';
 import { getSettings, getAppointment } from '../../../../lib/kv-utils';
 import { validateAndParseBerlinDate } from '../../../../lib/date-utils';
+import { generateICS } from '../../../../lib/email-templates';
+import type { AppointmentData, EmailSettings } from '../../../../lib/email-templates';
 
 export const GET: APIRoute = async ({ params, locals, request }) => {
   const { id } = params;
@@ -37,48 +38,48 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
       console.error(`Invalid appointment date for ${id}: ${appointment.appointmentDate}`);
       return new Response('Invalid appointment date', { status: 400 });
     }
-    
-    const [startHours, startMinutes] = appointment.time.split(':').map(Number);
-    const endHours = appointment.endTime ? appointment.endTime.split(':').map(Number)[0] : startHours + 1;
-    const endMinutes = appointment.endTime ? appointment.endTime.split(':').map(Number)[1] : startMinutes;
-
-    const startDateTime = new Date(appointmentDate);
-    startDateTime.setHours(startHours, startMinutes, 0, 0);
-
-    const endDateTime = new Date(appointmentDate);
-    endDateTime.setHours(endHours, endMinutes, 0, 0);
 
     // Determine base URL
     const url = new URL(request.url);
     const baseUrl = `${url.protocol}//${url.host}`;
     const appointmentUrl = `${baseUrl}/termin/${id}`;
-    const location = `${settings.eventLocation}, ${settings.eventHall}`;
 
-    // Create ICS
-    const calendar = ical({ name: 'Terminbestätigung' });
+    // Endzeit berechnen (falls nicht gesetzt)
+    const [startHours, startMinutes] = appointment.time.split(':').map(Number);
+    const durationMinutes = settings.appointmentDurationMinutes || 30;
+    const endDateTime = new Date(appointmentDate);
+    endDateTime.setHours(startHours, startMinutes + durationMinutes, 0, 0);
 
-    // ICS enthält Unternehmensdaten, nicht Kundendaten
-    calendar.createEvent({
-      start: startDateTime,
-      end: endDateTime,
-      summary: `Termin bei ${settings.companyName}`,
-      description: `Ihr Termin bei ${settings.companyName}\n\n` +
-        `Ort: ${location}\n\n` +
-        `Kontakt:\n` +
-        `${settings.companyName}\n` +
-        `${settings.companyAddress}\n` +
-        `Tel: ${settings.companyPhone}\n` +
-        `E-Mail: ${settings.companyEmail}` +
-        (settings.companyWebsite ? `\nWeb: ${settings.companyWebsite}` : '') +
-        `\n\nTermindetails: ${appointmentUrl}`,
-      location,
-      organizer: {
-        name: settings.companyName,
-        email: settings.companyEmail,
-      },
-    });
+    // Prepare data for ICS generation
+    const emailSettings: EmailSettings = {
+      companyName: settings.companyName,
+      companyAddress: settings.companyAddress,
+      companyPhone: settings.companyPhone,
+      companyEmail: settings.companyEmail,
+      companyWebsite: settings.companyWebsite,
+      logoUrl: settings.logoUrl,
+      primaryColor: settings.primaryColor,
+      standInfo: `${settings.eventLocation}, ${settings.eventHall}`,
+      eventName: settings.eventName,
+      eventYear: settings.eventYear,
+    };
 
-    const icsContent = calendar.toString();
+    const appointmentData: AppointmentData = {
+      id: appointment.id,
+      name: appointment.name,
+      company: appointment.company,
+      phone: appointment.phone,
+      email: appointment.email,
+      date: appointmentDate.toISOString().split('T')[0], // ISO date
+      startTime: appointment.time,
+      endTime: `${String(endDateTime.getHours()).padStart(2, '0')}:${String(endDateTime.getMinutes()).padStart(2, '0')}`,
+      message: appointment.message,
+      status: appointment.status,
+      appointmentUrl,
+    };
+
+    // ✅ Verwende zentrale generateICS() Funktion
+    const icsContent = generateICS(appointmentData, emailSettings);
 
     return new Response(icsContent, {
       status: 200,

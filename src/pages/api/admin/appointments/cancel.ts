@@ -57,8 +57,8 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
       );
     }
 
-    // Google Calendar Event löschen (falls vorhanden)
-    if (appointment.googleEventId) {
+    // ✅ FIX v1.2: Google Calendar Event NUR löschen wenn Status NICHT cancelled ist
+    if (appointment.googleEventId && appointment.status !== 'cancelled') {
       const googleClientId = locals?.runtime?.env?.GOOGLE_CLIENT_ID || import.meta.env.GOOGLE_CLIENT_ID;
       const googleClientSecret = locals?.runtime?.env?.GOOGLE_CLIENT_SECRET || import.meta.env.GOOGLE_CLIENT_SECRET;
       const googleRefreshToken = locals?.runtime?.env?.GOOGLE_REFRESH_TOKEN || import.meta.env.GOOGLE_REFRESH_TOKEN;
@@ -97,6 +97,8 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
           // Weiter machen, auch wenn Google Calendar fehlschlägt
         }
       }
+    } else if (appointment.status === 'cancelled') {
+      console.log('⏭️ Skipping Google Calendar deletion - appointment already cancelled');
     }
 
     // ✅ Verwende getSettings() für normalisierte Settings
