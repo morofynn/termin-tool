@@ -178,25 +178,18 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
         action: 'cancelled' as const,
       };
 
+      // ✅ FIX v1.1: E-Mail-Funktionen erstellen bereits Audit-Logs
+      // Keine doppelten Logs mehr hier
+
       // Admin-Benachrichtigung senden (wenn aktiviert)
       if (settings.emailNotifications && settings.adminEmail && isValidEmail(settings.adminEmail)) {
         try {
-          const adminEmailSent = await sendAdminNotification(
+          await sendAdminNotification(
             emailData,
             settings.adminEmail,
             locals?.runtime?.env
           );
-
-          if (adminEmailSent) {
-            console.log(`✅ Admin cancellation notification sent to ${settings.adminEmail}`);
-            await createAuditLog(
-              kv,
-              "E-Mail an Admin",
-              `Admin wurde über Stornierung informiert (${settings.adminEmail}).`,
-              appointment.id,
-              'system'
-            );
-          }
+          console.log(`✅ Admin cancellation notification sent to ${settings.adminEmail}`);
         } catch (emailError) {
           console.error('Error sending admin notification:', emailError);
         }
@@ -204,21 +197,11 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
 
       // Kunden-Benachrichtigung senden
       try {
-        const customerEmailSent = await sendCustomerNotification(
+        await sendCustomerNotification(
           emailData,
           locals?.runtime?.env
         );
-
-        if (customerEmailSent) {
-          console.log(`✅ Customer cancellation notification sent to ${appointment.email}`);
-          await createAuditLog(
-            kv,
-            "E-Mail an Kunde",
-            `Stornierungsbestätigung wurde an ${appointment.email} gesendet.`,
-            appointment.id,
-            'system'
-          );
-        }
+        console.log(`✅ Customer cancellation notification sent to ${appointment.email}`);
       } catch (emailError) {
         console.error('Error sending customer notification:', emailError);
       }

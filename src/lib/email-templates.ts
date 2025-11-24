@@ -7,6 +7,8 @@
  * - XSS-geschützt
  * - Responsive HTML Design
  * - Unterscheidung zwischen instant-booked und confirmed
+ * 
+ * ✅ FIX v1.1: RSVP aus ICS entfernt (verhindert Spam + doppelte ICS-Anhänge)
  */
 
 import ical, { ICalCalendar } from 'ical-generator';
@@ -41,7 +43,7 @@ export interface AppointmentData {
 
 /**
  * Generiert ICS Calendar Datei für Appointment
- * ✅ FIX: Absätze nach "Kontakt:" + Link zur Terminansicht
+ * ✅ FIX v1.1: RSVP entfernt (verhindert Spam + doppelte ICS-Anhänge)
  */
 export function generateICS(appointment: AppointmentData, settings: EmailSettings): string {
   const calendar = ical({ name: `Termin ${settings.companyName}` });
@@ -71,7 +73,7 @@ export function generateICS(appointment: AppointmentData, settings: EmailSetting
     `\n\nTermin verwalten:\n${appointment.appointmentUrl}`,
   ].filter(Boolean).join('');
   
-  // Create Event
+  // ✅ FIX v1.1: RSVP entfernt - verhindert Spam und doppelte ICS-Anhänge
   calendar.createEvent({
     start: startDateTime,
     end: endDateTime,
@@ -86,11 +88,12 @@ export function generateICS(appointment: AppointmentData, settings: EmailSetting
       name: settings.companyName,
       email: settings.companyEmail,
     },
+    // ✅ FIX: attendees ohne RSVP - nur informativ
     attendees: [
       {
         name: appointment.name,
         email: appointment.email,
-        rsvp: true,
+        // rsvp: true, ❌ ENTFERNT - verursacht Spam + doppelte ICS
       }
     ],
     status: appointment.status === 'confirmed' ? 'CONFIRMED' : 'TENTATIVE',

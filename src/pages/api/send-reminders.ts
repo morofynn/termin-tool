@@ -19,41 +19,13 @@ interface Appointment {
 }
 
 /**
- * Konvertiert Appointment zu AppointmentData für Email-Service
- */
-function toAppointmentData(
-  appointment: Appointment,
-  appointmentUrl: string
-): AppointmentData {
-  const appointmentDate = new Date(appointment.appointmentDate);
-  const [hours, minutes] = appointment.time.split(':').map(Number);
-  
-  const endDate = new Date(appointmentDate);
-  endDate.setMinutes(appointmentDate.getMinutes() + 30);
-  
-  const endTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
-  
-  return {
-    id: appointment.id,
-    name: appointment.name,
-    company: appointment.company,
-    phone: appointment.phone,
-    email: appointment.email,
-    date: appointmentDate.toISOString().split('T')[0], // YYYY-MM-DD
-    startTime: appointment.time,
-    endTime: endTime,
-    message: appointment.message,
-    status: appointment.status,
-    appointmentUrl,
-  };
-}
-
-/**
  * API-Route zum Versenden von Erinnerungs-E-Mails
  * Wird automatisch 24h vor jedem Termin ausgeführt (via Cron Trigger)
  * 
  * Kann manuell getestet werden mit:
  * POST /api/send-reminders
+ * 
+ * ✅ FIX v1.1: Verwendet ISO-Format (YYYY-MM-DD) für Datum-Felder
  */
 export const POST: APIRoute = async ({ locals, url }) => {
   try {
@@ -115,11 +87,12 @@ export const POST: APIRoute = async ({ locals, url }) => {
           const appointmentUrl = getAppointmentUrl(aptId, locals?.runtime?.env, url.origin);
 
           try {
+            // ✅ FIX v1.1: Nutze ISO-Format (YYYY-MM-DD) für day-Feld
             const emailSent = await sendReminderEmail(
               {
                 name: appointment.name,
                 email: appointment.email,
-                day: appointmentDate.toISOString().split('T')[0],
+                day: appointmentDate.toISOString().split('T')[0], // ISO-Format: "2025-01-17"
                 time: appointment.time,
                 company: appointment.company,
                 phone: appointment.phone,

@@ -84,7 +84,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    console.log(`✅ Appointment loaded: ${appointment.name} - ${appointment.email}`);
+    console.log(`✅ Appointment loaded: ${appointment.name} - ${appointment.email} (Status: ${appointment.status})`);
 
     // Aktionen ausführen
     switch (action) {
@@ -321,13 +321,14 @@ async function cancelAppointment(
 
 /**
  * LÖSCHT einen Termin endgültig
+ * ✅ FIX v1.1: Prüft Status vor Google Calendar Löschung
  */
 async function deleteAppointmentHandler(
   appointment: Appointment,
   KV: any,
   locals: any
 ) {
-  console.log(`🗑️ Deleting appointment: ${appointment.id}`);
+  console.log(`🗑️ Deleting appointment: ${appointment.id} (Status: ${appointment.status})`);
   
   try {
     // Audit Log für Löschung
@@ -339,22 +340,28 @@ async function deleteAppointmentHandler(
       'Admin'
     );
 
-    // Google Calendar Event löschen
-    try {
-      if (appointment.googleEventId) {
+    // ✅ FIX v1.1: Nur Google Calendar löschen wenn Status NICHT cancelled
+    // Bei cancelled wurde das Event bereits beim Stornieren gelöscht
+    if (appointment.status !== 'cancelled' && appointment.googleEventId) {
+      console.log(`🗓️ Deleting Google Calendar event (Status: ${appointment.status})`);
+      try {
         await deleteGoogleCalendarEvent(appointment.googleEventId, locals);
         console.log('✅ Google Calendar event deleted');
+      } catch (calError) {
+        console.error('❌ Error deleting Google Calendar event:', calError);
+        
+        await createAuditLog(
+          KV,
+          '⚠️ Google Calendar Fehler',
+          `Fehler beim Löschen des Calendar-Events: ${calError instanceof Error ? calError.message : 'Unbekannt'}`,
+          appointment.id,
+          'system'
+        );
       }
-    } catch (calError) {
-      console.error('❌ Error deleting Google Calendar event:', calError);
-      
-      await createAuditLog(
-        KV,
-        '⚠️ Google Calendar Fehler',
-        `Fehler beim Löschen des Calendar-Events: ${calError instanceof Error ? calError.message : 'Unbekannt'}`,
-        appointment.id,
-        'system'
-      );
+    } else if (appointment.status === 'cancelled') {
+      console.log('⏭️ Skipping Google Calendar deletion (already cancelled)');
+    } else {
+      console.log('⏭️ No Google Calendar event to delete');
     }
 
     // ✅ MIGRATION: Slot freigeben mit Utility

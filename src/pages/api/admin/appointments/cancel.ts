@@ -142,22 +142,17 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
         action: 'cancelled' as const,
       };
 
-      // E-Mails versenden (Kunde + Admin)
-      let customerEmailSent = false;
-      let adminEmailSent = false;
+      // ✅ FIX v1.1: E-Mail-Funktionen erstellen bereits Audit-Logs
+      // Keine doppelten Logs mehr hier
 
+      // E-Mails versenden (Kunde + Admin)
       try {
         // E-Mail an Kunden
-        customerEmailSent = await sendCustomerNotification(
+        await sendCustomerNotification(
           emailData,
           locals?.runtime?.env
         );
-        
-        if (customerEmailSent) {
-          console.log(`✅ Customer cancellation notification sent to ${appointment.email}`);
-        } else {
-          console.error(`❌ Failed to send customer cancellation notification to ${appointment.email}`);
-        }
+        console.log(`✅ Customer cancellation notification sent to ${appointment.email}`);
       } catch (emailError) {
         console.error('Error sending customer cancellation notification:', emailError);
       }
@@ -165,32 +160,22 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
       try {
         // E-Mail an Admin
         if (settings.emailNotifications && settings.adminEmail) {
-          adminEmailSent = await sendAdminNotification(
+          await sendAdminNotification(
             emailData,
             settings.adminEmail,
             locals?.runtime?.env
           );
-          
-          if (adminEmailSent) {
-            console.log(`✅ Admin cancellation notification sent to ${settings.adminEmail}`);
-          } else {
-            console.error(`❌ Failed to send admin cancellation notification to ${settings.adminEmail}`);
-          }
+          console.log(`✅ Admin cancellation notification sent to ${settings.adminEmail}`);
         }
       } catch (emailError) {
         console.error('Error sending admin cancellation notification:', emailError);
       }
 
-      // Audit Log erstellen
-      const emailStatus = customerEmailSent && adminEmailSent ? 'E-Mails wurden versendet' :
-                         customerEmailSent ? 'Nur Kunden-E-Mail versendet' :
-                         adminEmailSent ? 'Nur Admin-E-Mail versendet' :
-                         'E-Mail-Versand fehlgeschlagen';
-
+      // Audit Log erstellen (nur EINE für die Stornierung selbst)
       await createAuditLog(
         kv,
         'Termin storniert (Admin)',
-        `Termin für ${appointment.name} (${appointment.email}) am ${DAY_NAMES[appointment.day]}, ${appointment.time} Uhr wurde vom Admin storniert. Zeitslot wurde freigegeben. ${emailStatus}.`,
+        `Termin für ${appointment.name} (${appointment.email}) am ${DAY_NAMES[appointment.day]}, ${appointment.time} Uhr wurde vom Admin storniert. Zeitslot wurde freigegeben.`,
         appointment.id,
         'Admin'
       );
