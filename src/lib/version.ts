@@ -3,10 +3,11 @@
  * Diese Datei enthält die aktuelle Version des Terminbuchungs-Tools
  */
 
-export const APP_VERSION = 'v1.1.6';
+export const APP_VERSION = 'v1.1.7';
 
 /**
  * Version History
+ * v1.1.7 - 25.11.2025 - FIX: ICS method=PUBLISH korrekt implementiert (verhindert doppelte ICS-Dateien)
  * v1.1.6 - 25.11.2025 - FIX: method=PUBLISH statt REQUEST (verhindert doppelte ICS-Dateien + Spam)
  * v1.1.5 - 25.11.2025 - FIX: attendees aus E-Mail-ICS entfernt (verhindert unerwünschte E-Mails)
  * v1.1.4 - 25.11.2025 - FIX: Google Calendar attendees entfernt
