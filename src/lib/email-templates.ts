@@ -11,7 +11,9 @@
  * ✅ FIX v1.1: RSVP aus ICS entfernt (verhindert Spam + doppelte ICS-Anhänge)
  * ✅ FIX v1.1.5: attendees komplett entfernt (verhindert unerwünschte E-Mails)
  * ✅ FIX v1.1.7: ICS method auf PUBLISH gesetzt (verhindert doppelte ICS durch Gmail/Outlook)
- * ✅ FIX v1.1.8: ICS method KOMPLETT entfernt (backup-19-11 Verhalten wiederhergestellt)
+ * ✅ FIX v1.1.8: ICS zurück zu backup-24-11 Verhalten (KEIN attendees, KEIN method)
+ *    Problem: Liegt an Gmail-Konto Einstellungen, nicht am Code
+ *    Lösung: Minimalistisches ICS ohne attendees und ohne method Parameter
  */
 
 import ical, { ICalCalendar } from 'ical-generator';
@@ -46,17 +48,15 @@ export interface AppointmentData {
 
 /**
  * Generiert ICS Calendar Datei für Appointment
- * ✅ FIX v1.1: RSVP entfernt (verhindert Spam + doppelte ICS-Anhänge)
- * ✅ FIX v1.1.5: attendees komplett entfernt (verhindert unerwünschte E-Mails)
- * ✅ FIX v1.1.8: method KOMPLETT entfernt - backup-19-11 Verhalten wiederhergestellt
+ * ✅ FIX v1.1.8: Minimalistisches ICS - KEIN attendees, KEIN method
  * 
  * WICHTIG: Diese ICS ist identisch zu download-ics.ts und AppointmentQRCode.tsx
- * WICHTIG: KEIN method Parameter! (weder REQUEST noch PUBLISH)
+ * WICHTIG: So minimalistisch wie möglich - Gmail-Konto Einstellungen können ICS modifizieren
  */
 export function generateICS(appointment: AppointmentData, settings: EmailSettings): string {
   const calendar = ical({ 
     name: `Termin ${settings.companyName}`
-    // ✅ FIX v1.1.8: KEIN method mehr! Backup-19-11 hatte auch keinen und funktionierte.
+    // ✅ KEIN method Parameter
   });
   
   // Parse Date & Time
@@ -84,8 +84,8 @@ export function generateICS(appointment: AppointmentData, settings: EmailSetting
     `\n\nTermin verwalten:\n${appointment.appointmentUrl}`,
   ].filter(Boolean).join('');
   
-  // ✅ FIX v1.1.5: attendees KOMPLETT entfernt - nur organizer bleibt
-  // Identisch zu download-ics.ts und AppointmentQRCode.tsx
+  // ✅ FIX v1.1.8: KEIN attendees mehr - so minimalistisch wie möglich
+  // Gmail-Konto Einstellungen können problematisch sein, also halten wir das ICS simpel
   calendar.createEvent({
     start: startDateTime,
     end: endDateTime,
@@ -100,7 +100,7 @@ export function generateICS(appointment: AppointmentData, settings: EmailSetting
       name: settings.companyName,
       email: settings.companyEmail,
     },
-    // ✅ KEIN attendees mehr - verhindert unerwünschte E-Mails
+    // ✅ KEIN attendees - Gmail-Konto Einstellungen entscheiden über Verhalten
     status: appointment.status === 'confirmed' ? 'CONFIRMED' : 'TENTATIVE',
   });
   

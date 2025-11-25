@@ -600,7 +600,7 @@ export default function AppointmentScheduler() {
                 maxWidth: '32rem',
                 margin: '0 auto'
               }}>
-                Wir sehen uns im nächsten Jahr wieder auf der {eventConfig.name}.
+                Wir sehen uns {eventConfig.year + 1} wieder auf der nächsten OPTI!
               </p>
             </CardContent>
           </Card>
