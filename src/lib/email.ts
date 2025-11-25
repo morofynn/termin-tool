@@ -11,6 +11,7 @@
  * Fixed: Test-Emails senden BEIDE Versionen (Kunde + Admin) an Admin
  * Fixed: Sofortbuchung sendet Admin-Mail mit richtiger Action (instant-booked)
  * Fixed: Admin Base URL aus Environment Variable (ADMIN_BASE_URL)
+ * ✅ FIX v1.1.6: method=REQUEST entfernt - verhindert doppelte ICS-Dateien (mail-anhang.ics)
  */
 
 import { 
@@ -114,6 +115,7 @@ function encodeSubject(subject: string): string {
 
 /**
  * Sendet E-Mail über Gmail API
+ * ✅ FIX v1.1.6: method=REQUEST entfernt - verhindert dass Gmail/Outlook automatisch zweite ICS erstellt
  */
 async function sendViaGmail(options: EmailOptions, config: { 
   clientId: string; 
@@ -151,7 +153,12 @@ async function sendViaGmail(options: EmailOptions, config: {
     let emailContent = '';
     
     if (options.icsAttachment) {
-      // Multipart Email mit ICS Anhang - BEIDE PARTS Base64-encoded!
+      // ✅ FIX v1.1.6: method=REQUEST entfernt!
+      // Vorher: text/calendar; method=REQUEST → Gmail/Outlook behandelt das als Meeting-Einladung
+      // Jetzt: text/calendar; method=PUBLISH → Wird als einfacher Kalender-Anhang behandelt
+      // 
+      // Problem vorher: Gmail/Outlook erstellt automatisch eine zweite ICS namens "mail-anhang.ics" oder "invite.ics"
+      // Lösung: method=PUBLISH oder ganz ohne method → NUR eine ICS-Datei ("termin.ics")
       emailContent = [
         `From: ${options.from || config.userEmail}`,
         `To: ${options.to}`,
@@ -166,7 +173,7 @@ async function sendViaGmail(options: EmailOptions, config: {
         base64EncodeUTF8(options.html),
         '',
         `--${boundary}`,
-        'Content-Type: text/calendar; charset=utf-8; method=REQUEST',
+        'Content-Type: text/calendar; charset=utf-8; method=PUBLISH',
         'Content-Transfer-Encoding: base64',
         'Content-Disposition: attachment; filename="termin.ics"',
         '',
