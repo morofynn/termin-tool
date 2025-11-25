@@ -39,7 +39,7 @@ export const DEFAULT_SETTINGS = {
   companyPhone: '+49 221 292 40 500',
   companyEmail: 'info@moro-gmbh.de',
   companyWebsite: 'https://www.moroclub.com',
-  logoUrl: 'https://cdn.prod.website-files.com/66c5b6f94041a6256d15cfa6/66d86596b9d572660f8b239d_moro-logo.svg',
+  logoUrl: 'https://cdn.prod.website-files.com/66c5b6f94041a6256d15cfa6/69249d0cf88d38bba4ea0c08_moro_logo.png',
   primaryColor: '#2d62ff',
   
   // Booking Settings
