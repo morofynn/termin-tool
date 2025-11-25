@@ -14,10 +14,15 @@
  * ✅ FIX v1.1.8: ICS zurück zu backup-24-11 Verhalten (KEIN attendees, KEIN method)
  *    Problem: Liegt an Gmail-Konto Einstellungen, nicht am Code
  *    Lösung: Minimalistisches ICS ohne attendees und ohne method Parameter
- * ✅ FIX v1.1.9: ICS-Generierung vereinfacht
+ * ✅ FIX v1.1.9: ICS-Generierung vereinfacht (Test 1)
  *    - Google Calendar API generiert automatisch ICS bei Events
  *    - E-Mails brauchen KEINE manuellen ICS-Anhänge mehr
  *    - generateICS() nur noch für Download-Links (QR-Code, Detail-Seite)
+ * ✅ FIX v1.1.10: ICS-Anhänge wieder aktiviert für BESTÄTIGUNGS-E-Mails
+ *    - Nur für Customer Confirmation (instant-booked + confirmed)
+ *    - Kein ICS für: requested, cancelled, rejected, reminder, admin
+ *    - Google Calendar API bleibt primäre Integration
+ *    - ICS ist Backup/Alternative für Kunden ohne Google
  */
 
 import ical, { ICalCalendar } from 'ical-generator';
@@ -57,8 +62,10 @@ export interface AppointmentData {
  * WICHTIG: Diese ICS ist identisch zu download-ics.ts und AppointmentQRCode.tsx
  * WICHTIG: So minimalistisch wie möglich - Gmail-Konto Einstellungen können ICS modifizieren
  * 
- * NOTE v1.1.9: Diese Funktion wird NUR noch für Download-Links verwendet (QR-Code, Detail-Seite).
- * E-Mails brauchen KEINE ICS-Anhänge mehr - Google Calendar API generiert automatisch ICS.
+ * NOTE v1.1.10: Diese Funktion wird verwendet für:
+ * - Download-Links (QR-Code, Detail-Seite)
+ * - E-Mail-Anhänge bei Bestätigungs-E-Mails (instant-booked + confirmed)
+ * - NICHT für: requested, cancelled, rejected, reminder, admin
  */
 export function generateICS(appointment: AppointmentData, settings: EmailSettings): string {
   const calendar = ical({ 
@@ -349,7 +356,7 @@ export function generateCustomerRequestEmail(
 
 /**
  * CUSTOMER: Termin bestätigt
- * ✅ FIX v1.1.9: Hinweis auf automatische Kalenderdatei von Google Calendar API
+ * ✅ FIX v1.1.10: Hinweis auf ICS-Anhang wieder hinzugefügt
  */
 export function generateCustomerConfirmationEmail(
   appointment: AppointmentData,

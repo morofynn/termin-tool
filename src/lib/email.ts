@@ -12,11 +12,17 @@
  * Fixed: Sofortbuchung sendet Admin-Mail mit richtiger Action (instant-booked)
  * Fixed: Admin Base URL aus Environment Variable (ADMIN_BASE_URL)
  * ✅ FIX v1.1.6: method=REQUEST entfernt - verhindert doppelte ICS-Dateien (mail-anhang.ics)
- * ✅ FIX v1.1.9: Alle ICS-Anhänge aus E-Mails entfernt
+ * ✅ FIX v1.1.9: Alle ICS-Anhänge aus E-Mails entfernt (Test 1)
  *    - Google Calendar API generiert automatisch ICS bei Events
  *    - Kunden bekommen ICS automatisch via Google Calendar
  *    - Admin nutzt Google Calendar Integration (keine ICS nötig)
  *    - ICS nur noch für Download-Links (QR-Code, Detail-Seite)
+ * ✅ FIX v1.1.10: ICS-Anhänge wieder aktiviert für BESTÄTIGUNGS-E-Mails
+ *    - Nur für Customer Confirmation (instant-booked + confirmed)
+ *    - Kein ICS für: requested, cancelled, rejected, reminder, admin
+ *    - Google Calendar API bleibt aktiv (primäre Integration)
+ *    - ICS ist Backup/Alternative für Kunden ohne Google
+ *    - WICHTIG: KEIN method Parameter (verhindert doppelte ICS!)
  */
 
 import { 
@@ -120,7 +126,8 @@ function encodeSubject(subject: string): string {
 
 /**
  * Sendet E-Mail über Gmail API
- * ✅ FIX v1.1.9: Alle ICS-Anhänge entfernt - Google Calendar API übernimmt das
+ * ✅ FIX v1.1.10: ICS-Anhänge wieder aktiviert für Bestätigungs-E-Mails
+ * ⚠️ WICHTIG: KEIN method=REQUEST Parameter (führt zu doppelten ICS!)
  */
 async function sendViaGmail(options: EmailOptions, config: { 
   clientId: string; 
@@ -153,17 +160,53 @@ async function sendViaGmail(options: EmailOptions, config: {
     // Subject mit RFC 2047 Encoding (für Umlaute + Emojis)
     const encodedSubject = encodeSubject(options.subject);
     
-    // ✅ FIX v1.1.9: Immer einfache HTML Email (KEINE ICS-Anhänge mehr)
-    const emailContent = [
-      `From: ${options.from || config.userEmail}`,
-      `To: ${options.to}`,
-      `Subject: ${encodedSubject}`,
-      'MIME-Version: 1.0',
-      'Content-Type: text/html; charset=utf-8',
-      'Content-Transfer-Encoding: base64',
-      '',
-      base64EncodeUTF8(options.html),
-    ].join('\r\n');
+    // ✅ FIX v1.1.10: Unterscheide zwischen einfacher HTML und HTML + ICS
+    let emailContent: string;
+    
+    if (options.icsAttachment) {
+      // Multipart Email mit ICS-Anhang
+      const boundary = '----=_Part_' + Date.now() + '_' + Math.random().toString(36);
+      
+      emailContent = [
+        `From: ${options.from || config.userEmail}`,
+        `To: ${options.to}`,
+        `Subject: ${encodedSubject}`,
+        'MIME-Version: 1.0',
+        `Content-Type: multipart/mixed; boundary="${boundary}"`,
+        '',
+        `--${boundary}`,
+        'Content-Type: text/html; charset=utf-8',
+        'Content-Transfer-Encoding: base64',
+        '',
+        base64EncodeUTF8(options.html),
+        '',
+        `--${boundary}`,
+        // ⚠️ WICHTIG: KEIN method Parameter! Das führt zu doppelten ICS-Dateien
+        'Content-Type: text/calendar; charset=utf-8; name="termin.ics"',
+        'Content-Transfer-Encoding: base64',
+        'Content-Disposition: attachment; filename="termin.ics"',
+        '',
+        base64EncodeUTF8(options.icsAttachment),
+        '',
+        `--${boundary}--`,
+      ].join('\r\n');
+      
+      console.log('📧 Sending email WITH ICS attachment (NO method parameter)');
+    } else {
+      // Einfache HTML Email (OHNE ICS)
+      emailContent = [
+        `From: ${options.from || config.userEmail}`,
+        `To: ${options.to}`,
+        `Subject: ${encodedSubject}`,
+        'MIME-Version: 1.0',
+        'Content-Type: text/html; charset=utf-8',
+        'Content-Transfer-Encoding: base64',
+        '',
+        base64EncodeUTF8(options.html),
+      ].join('\r\n');
+      
+      console.log('📧 Sending email WITHOUT ICS attachment');
+    }
     
     // Gmail API erwartet URL-safe Base64
     const encodedEmail = base64EncodeUTF8(emailContent)
@@ -291,7 +334,7 @@ function convertToAppointmentData(
 /**
  * Unified function to send customer notifications
  * Automatically selects the correct email template based on action
- * ✅ FIX v1.1.9: KEINE ICS-Anhänge mehr - Google Calendar API generiert automatisch ICS
+ * ✅ FIX v1.1.10: ICS-Anhänge NUR für Bestätigungs-E-Mails (instant-booked + confirmed)
  */
 export async function sendCustomerNotification(
   data: {
@@ -326,28 +369,35 @@ export async function sendCustomerNotification(
 
   let html = '';
   let subject = '';
+  let icsAttachment: string | undefined = undefined;
 
   // Select correct function based on action
   switch (data.action) {
     case 'requested':
       html = generateCustomerRequestEmail(appointment, settings);
       subject = `⏳ Ihre Terminanfrage für die ${settings.eventName}`;
+      // ✅ KEIN ICS für Anfragen (noch nicht bestätigt)
       break;
     
     case 'instant-booked':
     case 'confirmed':
       html = generateCustomerConfirmationEmail(appointment, settings);
       subject = `✅ Terminbestätigung - ${settings.eventName}`;
+      // ✅ ICS-Anhang NUR für Bestätigungs-E-Mails
+      icsAttachment = generateICS(appointment, settings);
+      console.log('📆 Generating ICS attachment for confirmation email');
       break;
     
     case 'cancelled':
       html = generateCustomerCancellationEmail(appointment, settings, 'cancelled');
       subject = `❌ Termin storniert`;
+      // ✅ KEIN ICS für Stornierungen
       break;
     
     case 'rejected':
       html = generateCustomerCancellationEmail(appointment, settings, 'rejected');
       subject = `❌ Terminanfrage abgelehnt`;
+      // ✅ KEIN ICS für Ablehnungen
       break;
     
     default:
@@ -359,6 +409,7 @@ export async function sendCustomerNotification(
     to: data.email,
     subject,
     html,
+    icsAttachment, // ✅ Nur bei Bestätigungen definiert
     from: `${settings.companyName} <${settings.companyEmail}>`,
   }, env);
 
@@ -372,7 +423,7 @@ export async function sendCustomerNotification(
       await createAuditLog(
         env.APPOINTMENTS_KV,
         '✅ E-Mail an Kunde',
-        `${actionLabel} wurde an ${data.email} gesendet.`,
+        `${actionLabel} wurde an ${data.email} gesendet.${icsAttachment ? ' (mit ICS-Anhang)' : ''}`,
         undefined,
         'system'
       );
@@ -396,7 +447,7 @@ export async function sendCustomerNotification(
  * ✅ FIX: Subject & Header korrekt formatiert
  * ✅ FIX: Sofortbuchung (instant-booked) wird akzeptiert und als separater Template generiert
  * ✅ FIX: Admin Base URL aus Environment Variable (ADMIN_BASE_URL)
- * ✅ FIX v1.1.9: KEINE ICS-Anhänge mehr - Admin nutzt Google Calendar Integration
+ * ✅ FIX v1.1.10: KEINE ICS-Anhänge für Admin-E-Mails (nutzt Google Calendar Integration)
  */
 export async function sendAdminNotification(
   data: {
@@ -476,6 +527,7 @@ export async function sendAdminNotification(
     to: adminEmail,
     subject,
     html,
+    // ✅ KEIN ICS für Admin (nutzt Google Calendar Integration)
     from: `${settings.companyName} - Terminbuchung <${settings.companyEmail}>`,
   }, env);
 
@@ -510,7 +562,7 @@ export async function sendAdminNotification(
 
 /**
  * Alias for reminder emails
- * ✅ FIX v1.1.9: KEINE ICS-Anhänge mehr - Termin ist bereits im Kalender
+ * ✅ FIX v1.1.10: KEINE ICS-Anhänge für Erinnerungs-E-Mails (Termin ist bereits im Kalender)
  */
 export async function sendReminderEmail(
   data: {
@@ -550,6 +602,7 @@ export async function sendReminderEmail(
     to: data.email,
     subject: `⏰ Erinnerung: Ihr Termin morgen - ${settings.eventName}`,
     html,
+    // ✅ KEIN ICS für Erinnerungen (Termin ist bereits im Kalender)
     from: `${settings.companyName} <${settings.companyEmail}>`,
   }, env);
 

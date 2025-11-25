@@ -4,9 +4,31 @@
  * Zentrale Version für das gesamte Projekt
  */
 
-export const APP_VERSION = 'v1.1.8';
+export const APP_VERSION = 'v1.1.10';
 
 export const CHANGELOG = [
+  {
+    version: 'v1.1.10',
+    date: '2025-01-XX',
+    changes: [
+      '✅ ICS-Anhänge wieder aktiviert für Bestätigungs-E-Mails',
+      '📆 Nur für Customer Confirmation (instant-booked + confirmed)',
+      '❌ Kein ICS für: requested, cancelled, rejected, reminder, admin',
+      '🎯 Google Calendar API bleibt primäre Integration',
+      '💾 ICS ist Backup/Alternative für Kunden ohne Google'
+    ]
+  },
+  {
+    version: 'v1.1.9',
+    date: '2025-01-XX',
+    changes: [
+      '🧪 TEST: Alle ICS-Anhänge aus E-Mails entfernt',
+      '✅ Google Calendar API generiert automatisch ICS bei Events',
+      '✅ Kunden bekommen ICS automatisch via Google Calendar',
+      '✅ Admin nutzt Google Calendar Integration (keine ICS nötig)',
+      '✅ ICS nur noch für Download-Links (QR-Code, Detail-Seite)'
+    ]
+  },
   {
     version: 'v1.1.8',
     date: '2025-01-XX',
