@@ -1,0 +1,18 @@
+---
+import MainLayout from '../../layouts/main.astro';
+import AppointmentDetail from '../../components/AppointmentDetail';
+import { Toaster } from '../../components/ui/sonner';
+
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/');
+}
+---
+
+<MainLayout>
+  <div class="min-h-screen" style="background: transparent;">
+    <AppointmentDetail client:only="react" appointmentId={id} />
+    <Toaster client:only="react" />
+  </div>
+</MainLayout>
