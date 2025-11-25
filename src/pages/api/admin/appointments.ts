@@ -489,6 +489,7 @@ async function createGoogleCalendarEvent(
         dateTime: endDate.toISOString(),
         timeZone: 'Europe/Berlin',
       },
+      attendees: [{ email: appointment.email, displayName: appointment.name, responseStatus: 'accepted' }],
       reminders: {
         useDefault: false,
         overrides: [

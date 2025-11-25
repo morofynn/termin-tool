@@ -234,7 +234,7 @@ ${sanitizedData.message ? `- Nachricht: ${sanitizedData.message}` : ''}
 Termin verwalten: ${appointmentUrl}
             `.trim();
 
-            // ✅ FIX v1.1.4: attendees ENTFERNT + sendUpdates=none
+            // ✅ FIX v1.1.9: attendees mit responseStatus=accepted (ICS ohne E-Mail-Spam)
             const event = {
               summary: `Termin: ${sanitizedData.name}${sanitizedData.company ? ` (${sanitizedData.company})` : ''}`,
               description,
@@ -246,8 +246,7 @@ Termin verwalten: ${appointmentUrl}
                 dateTime: endDate.toISOString(),
                 timeZone: 'Europe/Berlin',
               },
-              // ❌ ENTFERNT: attendees würde Google dazu bringen, E-Mails zu senden
-              // attendees: [{ email: sanitizedData.email, displayName: sanitizedData.name }],
+              attendees: [{ email: sanitizedData.email, displayName: sanitizedData.name, responseStatus: 'accepted' }],
               reminders: {
                 useDefault: false,
                 overrides: [
