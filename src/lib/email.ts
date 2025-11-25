@@ -173,7 +173,7 @@ async function sendViaGmail(options: EmailOptions, config: {
         base64EncodeUTF8(options.html),
         '',
         `--${boundary}`,
-        'Content-Type: text/calendar; charset=utf-8; method=PUBLISH',
+        'Content-Type: text/calendar; charset=utf-8',
         'Content-Transfer-Encoding: base64',
         'Content-Disposition: attachment; filename="termin.ics"',
         '',

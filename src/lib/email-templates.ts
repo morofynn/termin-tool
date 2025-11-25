@@ -10,6 +10,7 @@
  * 
  * ✅ FIX v1.1: RSVP aus ICS entfernt (verhindert Spam + doppelte ICS-Anhänge)
  * ✅ FIX v1.1.5: attendees komplett entfernt (verhindert unerwünschte E-Mails)
+ * ✅ FIX v1.1.7: ICS method auf PUBLISH gesetzt (verhindert doppelte ICS durch Gmail/Outlook)
  */
 
 import ical, { ICalCalendar } from 'ical-generator';
@@ -46,11 +47,15 @@ export interface AppointmentData {
  * Generiert ICS Calendar Datei für Appointment
  * ✅ FIX v1.1: RSVP entfernt (verhindert Spam + doppelte ICS-Anhänge)
  * ✅ FIX v1.1.5: attendees komplett entfernt (verhindert unerwünschte E-Mails)
+ * ✅ FIX v1.1.7: ICS method auf PUBLISH gesetzt (verhindert doppelte ICS durch Gmail/Outlook)
  * 
  * WICHTIG: Diese ICS ist identisch zu download-ics.ts und AppointmentQRCode.tsx
  */
 export function generateICS(appointment: AppointmentData, settings: EmailSettings): string {
-  const calendar = ical({ name: `Termin ${settings.companyName}` });
+  const calendar = ical({ 
+    name: `Termin ${settings.companyName}`,
+    method: 'PUBLISH' // ✅ FIX v1.1.7: PUBLISH statt REQUEST - verhindert doppelte ICS
+  });
   
   // Parse Date & Time
   const appointmentDate = new Date(appointment.date);
