@@ -23,6 +23,11 @@
  *    - Kein ICS für: requested, cancelled, rejected, reminder, admin
  *    - Google Calendar API bleibt primäre Integration
  *    - ICS ist Backup/Alternative für Kunden ohne Google
+ * ✅ FIX v1.1.11: ICS-Anhänge wieder ENTFERNT aus E-Mails (Final)
+ *    - Problem: E-Mail-Account Einstellungen führen zu doppelten ICS
+ *    - Lösung: KEINE ICS-Anhänge in E-Mails
+ *    - ICS Download weiterhin über QR-Code & Termin-Detailseite verfügbar
+ *    - Google Calendar API ist primäre Integration
  */
 
 import ical, { ICalCalendar } from 'ical-generator';
@@ -62,10 +67,9 @@ export interface AppointmentData {
  * WICHTIG: Diese ICS ist identisch zu download-ics.ts und AppointmentQRCode.tsx
  * WICHTIG: So minimalistisch wie möglich - Gmail-Konto Einstellungen können ICS modifizieren
  * 
- * NOTE v1.1.10: Diese Funktion wird verwendet für:
+ * NOTE v1.1.11: Diese Funktion wird NUR verwendet für:
  * - Download-Links (QR-Code, Detail-Seite)
- * - E-Mail-Anhänge bei Bestätigungs-E-Mails (instant-booked + confirmed)
- * - NICHT für: requested, cancelled, rejected, reminder, admin
+ * - NICHT mehr für E-Mail-Anhänge (wegen doppelten ICS bei bestimmten E-Mail-Accounts)
  */
 export function generateICS(appointment: AppointmentData, settings: EmailSettings): string {
   const calendar = ical({ 
@@ -356,7 +360,7 @@ export function generateCustomerRequestEmail(
 
 /**
  * CUSTOMER: Termin bestätigt
- * ✅ FIX v1.1.10: Hinweis auf ICS-Anhang wieder hinzugefügt
+ * ✅ FIX v1.1.11: Hinweis auf ICS-Download via QR-Code (statt Anhang)
  */
 export function generateCustomerConfirmationEmail(
   appointment: AppointmentData,
@@ -413,13 +417,13 @@ export function generateCustomerConfirmationEmail(
     </tr>
     ` : ''}
 
-    <!-- Calendar Attachment Info -->
+    <!-- Calendar Download Info -->
     <tr>
       <td style="padding: 0 30px 30px 30px;">
-        <div style="background-color: #fef3c7; border: 2px solid #fbbf24; border-radius: 12px; padding: 15px; text-align: center;">
-          <p style="color: #92400e; font-size: 13px; margin: 0;">
-            📆 <strong>Dieser E-Mail ist eine Kalenderdatei (.ics) angehängt.</strong><br>
-            Sie können den Termin direkt in Ihren Kalender importieren.
+        <div style="background-color: #fef3c7; border: 2px solid #fbbf24; border-radius: 12px; padding: 15px;">
+          <p style="color: #92400e; font-size: 14px; line-height: 1.6; margin: 0;">
+            📅 <strong>Termin in Kalender speichern:</strong><br>
+            Besuchen Sie Ihre <a href="${escapeHtml(appointment.appointmentUrl)}" style="color: ${primaryColor}; text-decoration: none; font-weight: 600;">persönliche Terminseite</a> und klicken Sie auf den QR-Code, um den Termin als ICS-Datei herunterzuladen und in Ihren Kalender zu importieren.
           </p>
         </div>
       </td>
