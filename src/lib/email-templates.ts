@@ -14,6 +14,10 @@
  * ✅ FIX v1.1.8: ICS zurück zu backup-24-11 Verhalten (KEIN attendees, KEIN method)
  *    Problem: Liegt an Gmail-Konto Einstellungen, nicht am Code
  *    Lösung: Minimalistisches ICS ohne attendees und ohne method Parameter
+ * ✅ FIX v1.1.9: ICS-Generierung vereinfacht
+ *    - Google Calendar API generiert automatisch ICS bei Events
+ *    - E-Mails brauchen KEINE manuellen ICS-Anhänge mehr
+ *    - generateICS() nur noch für Download-Links (QR-Code, Detail-Seite)
  */
 
 import ical, { ICalCalendar } from 'ical-generator';
@@ -52,6 +56,9 @@ export interface AppointmentData {
  * 
  * WICHTIG: Diese ICS ist identisch zu download-ics.ts und AppointmentQRCode.tsx
  * WICHTIG: So minimalistisch wie möglich - Gmail-Konto Einstellungen können ICS modifizieren
+ * 
+ * NOTE v1.1.9: Diese Funktion wird NUR noch für Download-Links verwendet (QR-Code, Detail-Seite).
+ * E-Mails brauchen KEINE ICS-Anhänge mehr - Google Calendar API generiert automatisch ICS.
  */
 export function generateICS(appointment: AppointmentData, settings: EmailSettings): string {
   const calendar = ical({ 
@@ -342,6 +349,7 @@ export function generateCustomerRequestEmail(
 
 /**
  * CUSTOMER: Termin bestätigt
+ * ✅ FIX v1.1.9: Hinweis auf automatische Kalenderdatei von Google Calendar API
  */
 export function generateCustomerConfirmationEmail(
   appointment: AppointmentData,
