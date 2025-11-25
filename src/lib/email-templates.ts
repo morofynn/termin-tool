@@ -11,6 +11,7 @@
  * ✅ FIX v1.1: RSVP aus ICS entfernt (verhindert Spam + doppelte ICS-Anhänge)
  * ✅ FIX v1.1.5: attendees komplett entfernt (verhindert unerwünschte E-Mails)
  * ✅ FIX v1.1.7: ICS method auf PUBLISH gesetzt (verhindert doppelte ICS durch Gmail/Outlook)
+ * ✅ FIX v1.1.8: ICS method KOMPLETT entfernt (backup-19-11 Verhalten wiederhergestellt)
  */
 
 import ical, { ICalCalendar } from 'ical-generator';
@@ -47,14 +48,15 @@ export interface AppointmentData {
  * Generiert ICS Calendar Datei für Appointment
  * ✅ FIX v1.1: RSVP entfernt (verhindert Spam + doppelte ICS-Anhänge)
  * ✅ FIX v1.1.5: attendees komplett entfernt (verhindert unerwünschte E-Mails)
- * ✅ FIX v1.1.7: ICS method auf PUBLISH gesetzt (verhindert doppelte ICS durch Gmail/Outlook)
+ * ✅ FIX v1.1.8: method KOMPLETT entfernt - backup-19-11 Verhalten wiederhergestellt
  * 
  * WICHTIG: Diese ICS ist identisch zu download-ics.ts und AppointmentQRCode.tsx
+ * WICHTIG: KEIN method Parameter! (weder REQUEST noch PUBLISH)
  */
 export function generateICS(appointment: AppointmentData, settings: EmailSettings): string {
   const calendar = ical({ 
-    name: `Termin ${settings.companyName}`,
-    method: 'PUBLISH' // ✅ FIX v1.1.7: PUBLISH statt REQUEST - verhindert doppelte ICS
+    name: `Termin ${settings.companyName}`
+    // ✅ FIX v1.1.8: KEIN method mehr! Backup-19-11 hatte auch keinen und funktionierte.
   });
   
   // Parse Date & Time
