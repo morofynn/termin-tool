@@ -15,8 +15,8 @@ import { getShortLabel, getDayName, getLongLabel, getEventYear } from '../lib/ev
 interface AdminTimetableProps {
   isOpen: boolean;
   onClose: () => void;
-  unseenCount?: number;
-  onUnseenCountChange?: (count: number) => void;
+  seenAppointments: Map<string, SeenAppointment>;
+  onSeenAppointmentsChange: (map: Map<string, SeenAppointment>) => void;
 }
 
 interface Appointment {
@@ -120,13 +120,13 @@ const safeFormatDate = (dateString: string, formatString: string): string => {
   }
 };
 
-export default function AdminTimetable({ isOpen, onClose, unseenCount, onUnseenCountChange }: AdminTimetableProps) {
+export default function AdminTimetable({ isOpen, onClose, seenAppointments, onSeenAppointmentsChange }: AdminTimetableProps) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [seenAppointments, setSeenAppointments] = useState<Map<string, SeenAppointment>>(new Map());
   const [currentEventYear, setCurrentEventYear] = useState<number>(2026);
   const [settings, setSettings] = useState<any>(null);
+  const [unseenCount, setUnseenCount] = useState(0);
   
   // 🔥 Dynamische Day-Labels basierend auf Settings
   const [days, setDays] = useState<Record<DayKey, DayInfo>>({
@@ -194,64 +194,20 @@ export default function AdminTimetable({ isOpen, onClose, unseenCount, onUnseenC
   }, []);
 
   useEffect(() => {
-    // Lade gesehene Termine aus LocalStorage
-    const loadSeenAppointments = () => {
-      try {
-        const stored = localStorage.getItem(SEEN_APPOINTMENTS_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored) as SeenAppointment[];
-          const map = new Map(parsed.map(sa => [sa.id, sa]));
-          setSeenAppointments(map);
-        }
-      } catch (error) {
-        console.error('Error loading seen appointments:', error);
-      }
-    };
-    
-    loadSeenAppointments();
-  }, []);
-
-  useEffect(() => {
     if (isOpen) {
       fetchAppointments();
     }
   }, [isOpen, currentEventYear]);
 
-  // ✅ FIX: Cleanup - Entferne gelöschte Termine aus seenAppointments
+  // Berechne unseen count basierend auf appointments und seenAppointments
   useEffect(() => {
-    if (appointments.length >= 0) { // Läuft auch wenn 0 Termine
-      const currentAppointmentIds = new Set(appointments.map(apt => apt.id));
-      const newSeenAppointments = new Map(seenAppointments);
-      let hasChanges = false;
-      
-      // Entferne alle IDs die nicht mehr in appointments vorhanden sind
-      seenAppointments.forEach((_, id) => {
-        if (!currentAppointmentIds.has(id)) {
-          newSeenAppointments.delete(id);
-          hasChanges = true;
-          console.log(`🗑️ Removed deleted appointment from seen list: ${id}`);
-        }
-      });
-      
-      // Speichere nur wenn sich etwas geändert hat
-      if (hasChanges) {
-        setSeenAppointments(newSeenAppointments);
-        saveSeenAppointments(newSeenAppointments);
-        console.log(`✅ Cleaned up ${seenAppointments.size - newSeenAppointments.size} deleted appointments from seen list`);
-      }
-    }
-  }, [appointments]); // Läuft jedes Mal wenn appointments sich ändert
-
-  useEffect(() => {
-    // Berechne ungesehene Termine und informiere Parent
-    if (appointments.length > 0 && onUnseenCountChange) {
+    if (appointments.length > 0) {
       const count = appointments.filter(apt => isAppointmentUnseen(apt)).length;
-      onUnseenCountChange(count);
-    } else if (appointments.length === 0 && onUnseenCountChange) {
-      // ✅ FIX: Wenn keine Termine mehr, setze Count auf 0
-      onUnseenCountChange(0);
+      setUnseenCount(count);
+    } else {
+      setUnseenCount(0);
     }
-  }, [appointments, seenAppointments, onUnseenCountChange]);
+  }, [appointments, seenAppointments]);
 
   const saveSeenAppointments = (map: Map<string, SeenAppointment>) => {
     try {
@@ -288,7 +244,7 @@ export default function AdminTimetable({ isOpen, onClose, unseenCount, onUnseenC
       status: apt.status,
       timestamp: new Date().toISOString(),
     });
-    setSeenAppointments(newSeen);
+    onSeenAppointmentsChange(newSeen);
     saveSeenAppointments(newSeen);
   };
 
@@ -382,7 +338,7 @@ export default function AdminTimetable({ isOpen, onClose, unseenCount, onUnseenC
                   <div>
                     <h2 className="text-lg sm:text-xl font-bold text-gray-900">Zeitplan {currentEventYear}</h2>
                     <p className="text-xs sm:text-sm text-gray-600">
-                      Termine für {settings?.eventName || 'OPTI'} {currentEventYear} {unseenCount && unseenCount > 0 && (
+                      Termine für {settings?.eventName || 'OPTI'} {currentEventYear} {unseenCount > 0 && (
                         <span className="text-red-600 font-semibold">• {unseenCount} neu</span>
                       )}
                     </p>

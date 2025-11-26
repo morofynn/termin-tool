@@ -184,12 +184,12 @@ export default function AdminAppointments() {
   }, []);
 
   // Berechne unseen count wenn sich appointments oder seenAppointments ändern
+  // WICHTIG: Dies ist die primäre Source of Truth für unseenCount
   useEffect(() => {
     if (appointments.length > 0) {
       const count = calculateUnseenCount(appointments, seenAppointments);
       setUnseenCount(count);
     } else {
-      // Reset count wenn keine Termine vorhanden
       setUnseenCount(0);
     }
   }, [appointments, seenAppointments]);
@@ -442,10 +442,6 @@ export default function AdminAppointments() {
         return 0;
     }
   });
-
-  const handleUnseenCountChange = (newCount: number) => {
-    setUnseenCount(newCount);
-  };
 
   return (
     <div className="container mx-auto p-2 sm:p-4 md:p-6 lg:p-8 max-w-7xl">
@@ -948,8 +944,8 @@ export default function AdminAppointments() {
       <AdminTimetable 
         isOpen={timetableOpen} 
         onClose={() => setTimetableOpen(false)}
-        unseenCount={unseenCount}
-        onUnseenCountChange={handleUnseenCountChange}
+        seenAppointments={seenAppointments}
+        onSeenAppointmentsChange={setSeenAppointments}
       />
       <AdminDocumentation isOpen={documentationOpen} onClose={() => setDocumentationOpen(false)} />
     </div>
