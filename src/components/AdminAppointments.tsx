@@ -165,7 +165,7 @@ export default function AdminAppointments() {
   // Changelog State
   const { hasSeenChangelog, markAsSeen } = useChangelogSeen();
 
-  // NEUE: Lade gesehene Termine aus LocalStorage beim Start
+  // Lade gesehene Termine aus LocalStorage beim Start
   useEffect(() => {
     const loadSeenAppointments = () => {
       try {
@@ -174,7 +174,6 @@ export default function AdminAppointments() {
           const parsed = JSON.parse(stored) as SeenAppointment[];
           const map = new Map(parsed.map(sa => [sa.id, sa]));
           setSeenAppointments(map);
-          console.log(`📖 Loaded ${map.size} seen appointments from localStorage`);
         }
       } catch (error) {
         console.error('Error loading seen appointments:', error);
@@ -184,12 +183,14 @@ export default function AdminAppointments() {
     loadSeenAppointments();
   }, []);
 
-  // NEUE: Berechne unseen count wenn sich appointments oder seenAppointments ändern
+  // Berechne unseen count wenn sich appointments oder seenAppointments ändern
   useEffect(() => {
     if (appointments.length > 0) {
       const count = calculateUnseenCount(appointments, seenAppointments);
       setUnseenCount(count);
-      console.log(`🔔 Unseen count updated: ${count}`);
+    } else {
+      // Reset count wenn keine Termine vorhanden
+      setUnseenCount(0);
     }
   }, [appointments, seenAppointments]);
 
@@ -231,29 +232,22 @@ export default function AdminAppointments() {
   };
 
   const fetchAppointments = async () => {
-    console.log('🔄 Fetching appointments...');
     try {
       setLoading(true);
       setError(null);
       
       const url = `${baseUrl}/api/admin/appointments`;
-      console.log('📡 Fetching from:', url);
       
       const response = await fetch(url);
-      console.log('📥 Response status:', response.status);
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Error response:', errorText);
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
       
       const data = await response.json() as AppointmentsResponse;
-      console.log('✅ Data received:', data);
       
       if (data && Array.isArray(data.appointments)) {
-        console.log(`📋 ${data.appointments.length} appointments loaded`);
-        
         // Validiere und filtere Appointments mit ungültigen Daten
         const validAppointments = data.appointments.filter(apt => {
           const hasValidDate = safeParseDate(apt.appointmentDate) !== null;
@@ -269,25 +263,20 @@ export default function AdminAppointments() {
           return hasValidDate && hasValidCreated;
         });
         
-        console.log(`✅ ${validAppointments.length} valid appointments`);
         setAppointments(validAppointments);
       } else {
-        console.warn('⚠️ Invalid data format:', data);
         setAppointments([]);
       }
     } catch (err) {
-      console.error('💥 Fetch error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Verbindungsfehler';
       setError(errorMessage);
       toast.error('Fehler beim Laden: ' + errorMessage);
     } finally {
-      console.log('✅ Loading complete');
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    console.log('🚀 Component mounted, fetching appointments');
     fetchAppointments();
   }, []);
 
@@ -323,28 +312,20 @@ export default function AdminAppointments() {
   };
 
   const handleDeleteAppointment = async (id: string) => {
-    console.log(`🗑️ Frontend: Starting delete for appointment ${id}`);
     setUpdatingId(id);
     
     try {
-      console.log(`📡 Sending DELETE request to ${baseUrl}/api/admin/appointments`);
       const response = await fetch(`${baseUrl}/api/admin/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ appointmentId: id, action: 'delete' }),
       });
-
-      console.log(`📥 Delete response status: ${response.status}`);
       
       if (response.ok) {
-        const result = await response.json();
-        console.log('✅ Delete successful:', result);
-        
         setAppointments(prev => prev.filter(apt => apt.id !== id));
         toast.success('Termin wurde gelöscht');
       } else {
         const errorData = await response.json();
-        console.error('❌ Delete failed:', errorData);
         
         const errorMsg = (errorData as any).error || (errorData as any).message || 'Fehler beim Löschen';
         const detailsMsg = (errorData as any).details ? ` (${(errorData as any).details})` : '';
@@ -352,14 +333,12 @@ export default function AdminAppointments() {
         toast.error(errorMsg + detailsMsg);
       }
     } catch (err) {
-      console.error('💥 Delete error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
       toast.error(`Verbindungsfehler: ${errorMessage}`);
     } finally {
       setUpdatingId(null);
       setDeleteDialogOpen(false);
       setAppointmentToDelete(null);
-      console.log('✅ Delete operation complete');
     }
   };
 
@@ -858,7 +837,6 @@ export default function AdminAppointments() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-700">
                       <Calendar className="w-4 h-4 flex-shrink-0" />
-                      {/* 🔥 DYNAMISCHES DATUM AUS appointmentDate */}
                       <span className="font-medium">{safeFormatDate(appointment.appointmentDate, 'EEEE, dd. MMMM yyyy')}</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-700">
