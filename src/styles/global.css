@@ -687,6 +687,40 @@ width: fit-content !important;
 flex-shrink: 0 !important;
 }
 
+/* ===========================================
+CHECKBOX OUTLINE - Bessere Sichtbarkeit
+=========================================== */
+
+/* Graue Outline für bessere Sichtbarkeit */
+button[role="checkbox"],
+button[data-slot="checkbox"] {
+border: 1.5px solid #d1d5db !important; /* gray-300 */
+box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+background-color: #ffffff !important;
+}
+
+/* Hover State - leicht dunklerer Border */
+button[role="checkbox"]:hover,
+button[data-slot="checkbox"]:hover {
+border-color: #9ca3af !important; /* gray-400 */
+box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Checked State - behält Outline bei */
+button[role="checkbox"][data-state="checked"],
+button[data-slot="checkbox"][data-state="checked"] {
+border-color: #2d62ff !important; /* primary blue */
+background-color: #2d62ff !important;
+box-shadow: 0 1px 3px 0 rgba(45, 98, 255, 0.3) !important;
+}
+
+/* Focus State - leichter Ring */
+button[role="checkbox"]:focus-visible,
+button[data-slot="checkbox"]:focus-visible {
+outline: 2px solid #93c5fd !important; /* blue-300 */
+outline-offset: 2px !important;
+}
+
 /* Mobile Fixes */
 @media (max-width: 640px) {
 button[role="checkbox"],
@@ -697,6 +731,7 @@ min-height: 18px !important;
 max-height: 18px !important;
 min-width: 18px !important;
 max-width: 18px !important;
+border-width: 1.5px !important;
 }
 
 button[role="checkbox"] svg,
@@ -716,6 +751,7 @@ min-height: 16px !important;
 max-height: 16px !important;
 min-width: 16px !important;
 max-width: 16px !important;
+border-width: 1.5px !important;
 }
 
 button[role="checkbox"] svg,
@@ -773,4 +809,3 @@ width: auto !important;
 justify-content: flex-start !important;
 }
 }
-

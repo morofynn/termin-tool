@@ -40,10 +40,11 @@ export function validatePhone(phone: string): boolean {
 }
 
 /**
- * Validiert Namen (Min 2 Zeichen, erlaubt Buchstaben, Umlaute, Bindestriche, Leerzeichen)
+ * Validiert Namen (Min 2 Zeichen, erlaubt Buchstaben, Umlaute, Bindestriche, Leerzeichen, Punkte für Titel)
  */
 export function validateName(name: string): boolean {
-  const nameRegex = /^[a-zA-ZäöüÄÖÜß\s\-]{2,100}$/;
+  // Erlaubt: Buchstaben, Umlaute, Leerzeichen, Bindestriche UND Punkte (für Dr., Prof., etc.)
+  const nameRegex = /^[a-zA-ZäöüÄÖÜß\s\-\.]{2,100}$/;
   return nameRegex.test(name);
 }
 
@@ -141,7 +142,7 @@ export function validateAppointmentBooking(data: {
   
   // Name
   if (!validateName(data.name)) {
-    errors.name = 'Ungültiger Name (min. 2 Zeichen, nur Buchstaben)';
+    errors.name = 'Ungültiger Name (min. 2 Zeichen, nur Buchstaben, Bindestriche und Punkte)';
   }
   
   // Email
@@ -232,7 +233,7 @@ export function validateFormData(data: {
   
   // Name
   if (!data.name || !validateName(data.name)) {
-    errors.name = 'Ungültiger Name (min. 2 Zeichen, nur Buchstaben)';
+    errors.name = 'Ungültiger Name (min. 2 Zeichen, nur Buchstaben, Bindestriche und Punkte)';
   }
   
   // Email
